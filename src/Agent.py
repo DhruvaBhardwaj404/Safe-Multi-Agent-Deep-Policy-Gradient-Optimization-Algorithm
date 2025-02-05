@@ -48,9 +48,10 @@ class Agent:
         @rtype: m-dim tensor
         """
         if explore:
-            act = self.policy.forward(obs).to("cpu").numpy()
-            act = act + numpy.random.normal(0,0.7)
-            act = torch.tensor(act).to(self.device)
+            act = self.policy.forward(obs)
+            add_rand = torch.tensor(numpy.random.normal(0,1,size=(len(act)))).to(self.device)
+            act = act + add_rand
+            act = torch.tensor(act).to(self.device,dtype=torch.float32)
             return act
         else:
             return  self.policy.forward(obs)
@@ -93,9 +94,9 @@ class Agent:
 
             self.q_function.model.load_state_dict(torch.load(f"./model_parameters/agent{self.id}_q.pth"))
             self.q_function_target.model.load_state_dict(torch.load(f"./model_parameters/agent{self.id}_q_target.pth"))
-            self.loss_q = torch.load(f"./model_parameters/agent{self.id}_loss_q.pth")["exp_ret"]
-        except FileNotFoundError:
-            print("Couldn't Load checkpoint!")
+            self.loss_q = torch.load(f"./model_parameters/agent{self.id}_loss_q.pth")["loss_q"]
+        except FileNotFoundError as f:
+            print("Couldn't Load checkpoint!", str(f))
 
     def save_checkpoint(self,loss_q,exp_ret):
         if self.exp_ret is None:

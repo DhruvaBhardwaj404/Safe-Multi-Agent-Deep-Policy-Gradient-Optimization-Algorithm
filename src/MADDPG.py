@@ -82,7 +82,7 @@ class MADDPG:
         obs_new = convert_dict_to_tensors(obs_new).to("cpu")
         act = []
         for a in action:
-            act.append(a.detach().numpy())
+            act.append(a.cpu())
 
         if reward.size()[0]==0:
             return
@@ -104,8 +104,8 @@ class MADDPG:
                         torch.exp(-1. * self.steps/ self.eps_decay)
         self.steps += 1
         for ind,a in enumerate(self.agents):
-            if sample > eps_threshold:
-                agent_actions.append(a.get_next_action(obs[ind],True).to("cpu"))
+            if sample < eps_threshold:
+                agent_actions.append(a.get_next_action(obs[ind],True))
             else:
                 agent_actions.append(a.get_next_action(obs[ind]).to("cpu"))
 
@@ -129,19 +129,18 @@ class MADDPG:
         act_curr = [[] for _ in self.agents]
         gobs = [[] for _ in samples]
         gact = [[] for _ in samples]
-        rew = [[] for _ in self.agents]
+        rew = [0 for _ in range(self.batch_size)]
         nact = [[] for _ in self.agents]
-        act = [[] for _ in self.agents]
         nobs = [[] for _ in self.agents]
         obs = [[] for _ in self.agents]
 
         for j,s in enumerate(samples):
             sample = s.to(self.device)
             for i,agent in enumerate(self.agents):
-                rew[i].append(sample["rew"][i])
+                rew[j] += sample["rew"][i]
                 obs[i].append(sample["obs"][i])
                 nobs[i].append(sample["nobs"][i])
-                act_curr[i].append(agent.get_next_action(obs[i][-1]))
+                act_curr[i].append(sample["act"][i])
                 nact[i].append(agent.get_action_target(nobs[i][-1]))
                 gnobs[j].extend(sample["nobs"][i])
                 gnact[j].extend(nact[i][-1])
@@ -156,7 +155,7 @@ class MADDPG:
             for j in range(self.batch_size):
                 qt_inp = torch.tensor(gnobs[i] + gnact[i]).to(self.device)
                 q_inp = torch.tensor(gobs[i] + gact[i]).to(self.device)
-                temp = torch.add(rew[i][j], self.gamma*agent.q_function_target(qt_inp))
+                temp = torch.add(rew[j], self.gamma*agent.q_function_target(qt_inp))
                 y.append(temp)
                 temp = agent.get_reward(q_inp)
                 q.append(temp)
@@ -179,8 +178,9 @@ class MADDPG:
             exp_ret = torch.tensor(0,dtype=torch.float32)
             for j in range(self.batch_size):
                 q_inp = torch.tensor(gobs[j]+gact_curr[j]).to(self.device)
-                cur_pol = agent.get_next_action(obs[i][j].to(self.device))
-                cur_pol = cur_pol.mean()
+                cur_pol = torch.tensor(act_curr[i][j]).to(self.device)
+                cur_pol_weight = torch.nn.functional.gumbel_softmax(cur_pol,hard=True)
+                cur_pol  = torch.matmul(cur_pol,cur_pol_weight)
                 cur_rew = agent.get_reward(q_inp)
                 exp_ret = exp_ret - cur_pol*cur_rew
             exp_ret = torch.divide(exp_ret, self.batch_size)

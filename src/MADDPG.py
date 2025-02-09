@@ -1,5 +1,6 @@
 from copy import deepcopy
 import torch
+import pandas as pd
 from agilerl.components.replay_buffer import ReplayBuffer
 import numpy
 import time
@@ -55,6 +56,10 @@ class MADDPG:
         self.device = device
         self.steps = 0
         self.agents = []
+        try:
+            self.training_logs = pd.read_csv("./training_record.csv").to_numpy()
+        except Exception as e:
+            self.training_logs = pd.DataFrame()
 
         for i in range(0,agent_num):
             self.agents.append(Agent(i,action_size,obs_size,agent_num,device))
@@ -148,6 +153,7 @@ class MADDPG:
                 gobs[j].extend(obs[i][-1])
                 gact[j].extend(sample["act"][i])
 
+
         for i,agent in enumerate(self.agents):
             loss_q = torch.nn.MSELoss()
             q = []
@@ -202,3 +208,7 @@ class MADDPG:
                 target_param.data.copy_(target_param.data * (1.0 - self.tau) + param.data * self.tau)
 
             agent.save_checkpoint(loss,exp_ret)
+            self.training_logs = pd.concat((self.training_logs, pd.DataFrame({"timestamp":int(time.time()),"agent_num":i,"mean_q_loss":loss.detach().to("cpu"),"mean_exp_return":exp_ret.detach().to("cpu")})),ignore_index=True)
+
+    def save_results(self):
+        self.training_logs.to_csv("./training_record.csv")

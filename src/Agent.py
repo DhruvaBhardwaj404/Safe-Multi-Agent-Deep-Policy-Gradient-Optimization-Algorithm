@@ -105,7 +105,7 @@ class Agent:
             torch.save({"exp_ret":exp_ret},f"./model_parameters/agent{self.id}_exp_ret.pth")
             self.exp_ret = exp_ret
 
-        elif self.exp_ret > exp_ret:
+        elif True:
             torch.save(self.policy.model.state_dict(), f"./model_parameters/agent{self.id}_policy.pth")
             torch.save(self.policy_target.model.state_dict(), f"./model_parameters/agent{self.id}_policy_target.pth")
             torch.save({"exp_ret": exp_ret}, f"./model_parameters/agent{self.id}_exp_ret.pth")
@@ -116,7 +116,7 @@ class Agent:
             torch.save(self.q_function_target.model.state_dict(), f"./model_parameters/agent{self.id}_q_target.pth")
             torch.save({"loss_q": loss_q}, f"./model_parameters/agent{self.id}_loss_q.pth")
             self.loss_q = loss_q
-        elif self.loss_q < loss_q:
+        elif True:
             torch.save(self.q_function.model.state_dict(), f"./model_parameters/agent{self.id}_q.pth")
             torch.save(self.q_function_target.model.state_dict(), f"./model_parameters/agent{self.id}_q_target.pth")
             torch.save({"loss_q": loss_q}, f"./model_parameters/agent{self.id}_loss_q.pth")

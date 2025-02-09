@@ -21,4 +21,8 @@ if __name__ == "__main__":
             observations, rewards, terminations, truncations, infos = env.step(actions)
             control.add_to_replay(observations, act, rewards, observations)
             control.update()
+
+        if episode%10==0:
+            control.save_results()
+
     env.close()

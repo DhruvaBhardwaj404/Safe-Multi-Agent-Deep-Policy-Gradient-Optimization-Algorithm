@@ -5,8 +5,6 @@ from agilerl.components.replay_buffer import ReplayBuffer
 import numpy
 import time
 from src.helpers import *
-from numpy.core.fromnumeric import argmax
-from torchviz import make_dot
 from src.Agent import Agent
 from tensordict import TensorDict
 from torchrl.data import ReplayBuffer, ListStorage
@@ -57,7 +55,7 @@ class MADDPG:
         self.steps = 0
         self.agents = []
         try:
-            self.training_logs = pd.read_csv("./training_record.csv").to_numpy()
+            self.training_logs = pd.read_csv("./training_record.csv")
         except Exception as e:
             self.training_logs = pd.DataFrame()
 

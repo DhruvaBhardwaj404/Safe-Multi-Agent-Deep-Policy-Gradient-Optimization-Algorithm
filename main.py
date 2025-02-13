@@ -1,4 +1,4 @@
-from pettingzoo.mpe import simple_spread_v3
+from src.pettingzoo.mpe import simple_spread_v3
 from src.MADDPG import MADDPG
 from src.helpers import *
 import torch

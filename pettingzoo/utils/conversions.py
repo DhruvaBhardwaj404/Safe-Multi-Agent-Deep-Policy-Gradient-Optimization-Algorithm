@@ -193,6 +193,8 @@ class aec_to_parallel_wrapper(ParallelEnv[AgentID, ObsType, ActionType]):
         truncations = {}
         infos = {}
         observations = {}
+        costs = defaultdict(int)
+
         for agent in self.aec_env.agents:
             if agent != self.aec_env.agent_selection:
                 if self.aec_env.terminations[agent] or self.aec_env.truncations[agent]:
@@ -203,10 +205,12 @@ class aec_to_parallel_wrapper(ParallelEnv[AgentID, ObsType, ActionType]):
                     raise AssertionError(
                         f"expected agent {agent} got agent {self.aec_env.agent_selection}, Parallel environment wrapper expects agents to step in a cycle."
                     )
-            obs, rew, termination, truncation, info = self.aec_env.last()
+            obs, rew, termination, truncation, info, cost = self.aec_env.last()
+            # Change Here
             self.aec_env.step(actions[agent])
             for agent in self.aec_env.agents:
                 rewards[agent] += self.aec_env.rewards[agent]
+                costs[agent] += self.aec_env.costs[agent]
 
         terminations = dict(**self.aec_env.terminations)
         truncations = dict(**self.aec_env.truncations)
@@ -221,7 +225,7 @@ class aec_to_parallel_wrapper(ParallelEnv[AgentID, ObsType, ActionType]):
             self.aec_env.step(None)
 
         self.agents = self.aec_env.agents
-        return observations, rewards, terminations, truncations, infos
+        return observations, rewards, terminations, truncations, infos , costs
 
     def render(self):
         return self.aec_env.render()

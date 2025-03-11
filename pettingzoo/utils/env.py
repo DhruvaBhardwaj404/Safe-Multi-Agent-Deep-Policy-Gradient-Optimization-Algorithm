@@ -47,6 +47,7 @@ class AECEnv(Generic[AgentID, ObsType, ActionType]):
     terminations: dict[AgentID, bool]
     truncations: dict[AgentID, bool]
     rewards: dict[AgentID, float]  # Reward from the last step for each agent
+    costs:dict[AgentID, float]   #Cost from the last step for agent
     # Cumulative rewards for each agent
     _cumulative_rewards: dict[AgentID, float]
     infos: dict[
@@ -161,6 +162,7 @@ class AECEnv(Generic[AgentID, ObsType, ActionType]):
         """Clears all items in .rewards."""
         for agent in self.rewards:
             self.rewards[agent] = 0
+            self.costs[agent] = 0
 
     def _accumulate_rewards(self) -> None:
         """Adds .rewards dictionary to ._cumulative_rewards dictionary.
@@ -190,6 +192,7 @@ class AECEnv(Generic[AgentID, ObsType, ActionType]):
             self.terminations[agent],
             self.truncations[agent],
             self.infos[agent],
+            self.costs[agent] # change
         )
 
     def _was_dead_step(self, action: ActionType) -> None:

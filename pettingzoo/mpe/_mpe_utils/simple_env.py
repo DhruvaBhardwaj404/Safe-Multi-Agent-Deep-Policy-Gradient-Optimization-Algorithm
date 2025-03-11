@@ -157,6 +157,7 @@ class SimpleEnv(AECEnv):
 
         self.agents = self.possible_agents[:]
         self.rewards = {name: 0.0 for name in self.agents}
+        self.costs = {name: 0.0 for name in self.agents}    #changed
         self._cumulative_rewards = {name: 0.0 for name in self.agents}
         self.terminations = {name: False for name in self.agents}
         self.truncations = {name: False for name in self.agents}
@@ -191,16 +192,18 @@ class SimpleEnv(AECEnv):
             global_reward = float(self.scenario.global_reward(self.world))
 
         for agent in self.world.agents:
-            agent_reward = float(self.scenario.reward(agent, self.world))
-            if self.local_ratio is not None:
-                reward = (
-                    global_reward * (1 - self.local_ratio)
-                    + agent_reward * self.local_ratio
-                )
-            else:
-                reward = agent_reward
+            # agent_reward = float(self.scenario.reward(agent, self.world))
+            agent_cost = float(self.scenario.cost(agent, self.world)) # changed here
+
+            # if self.local_ratio is not None:
+            #     reward = (
+            #         global_reward
+            #     )
+            # else:
+            reward = global_reward
 
             self.rewards[agent.name] = reward
+            self.costs[agent.name] = agent_cost
 
     # set env action for a particular agent
     def _set_action(self, action, agent, action_space, time=None):
@@ -266,7 +269,7 @@ class SimpleEnv(AECEnv):
 
         self._cumulative_rewards[cur_agent] = 0
         self._accumulate_rewards()
-
+#  add cost method call here
         if self.render_mode == "human":
             self.render()
 

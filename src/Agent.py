@@ -10,7 +10,7 @@ class Agent:
     Contains methods, data and models that is related to agents (such as critic model etc.)
     """
 
-    def __init__(self, agent_id:int, action_size:int, obs_size:int, num_agents:int,device:str="cpu"):
+    def __init__(self, agent_id:int, action_size:int, obs_size:int, num_agents:int,device:str="cpu",lr=0.01):
         """
         @param agent_id: unique identifier for the agent
         @type agent_id: integer
@@ -26,7 +26,7 @@ class Agent:
         self.id = agent_id
         self.q_function = DQN((action_size+obs_size)*num_agents,device)
         self.q_function_target = deepcopy(self.q_function)
-        self.q_grad = torch.optim.Adam(self.q_function.model.parameters())
+        self.q_grad = torch.optim.Adam(self.q_function.model.parameters(),lr)
 
         self.policy = DPN(obs_size,action_size,device)
         self.policy_target = deepcopy(self.policy)

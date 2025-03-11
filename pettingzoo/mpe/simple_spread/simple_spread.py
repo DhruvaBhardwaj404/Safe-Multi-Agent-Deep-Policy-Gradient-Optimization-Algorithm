@@ -168,6 +168,18 @@ class Scenario(BaseScenario):
         dist_min = agent1.size + agent2.size
         return True if dist < dist_min else False
 
+    def dangerously_close(self, agent1, agent2):
+        delta_pos = agent1.state.p_pos - agent2.state.p_pos
+        dist = np.sqrt(np.sum(np.square(delta_pos)))
+        dist_min = agent1.size + agent2.size
+        if 0 < dist <dist_min:
+            return 1
+        elif 1.5*dist_min < dist:
+            return 0
+        else:
+            return ((1.5*dist_min)-dist)**2
+
+
     def reward(self, agent, world):
         # Agents are rewarded based on minimum agent distance to each landmark, penalized for collisions
         rew = 0
@@ -175,6 +187,14 @@ class Scenario(BaseScenario):
             for a in world.agents:
                 rew -= 1.0 * (self.is_collision(a, agent) and a != agent)
         return rew
+
+    def cost(self, agent, world):
+        cost = 0
+        for a in world.agents:
+            if a != agent:
+                cost += self.dangerously_close(agent, a)
+        return cost
+
 
     def global_reward(self, world):
         rew = 0

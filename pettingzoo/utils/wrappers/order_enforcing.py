@@ -45,6 +45,7 @@ class OrderEnforcingWrapper(BaseWrapper[AgentID, ObsType, ActionType]):
                 "terminations",
                 "truncations",
                 "infos",
+                "costs",   #Change
                 "agent_selection",
                 "num_agents",
                 "agents",

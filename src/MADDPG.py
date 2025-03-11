@@ -1,5 +1,3 @@
-from copy import deepcopy
-import torch
 import pandas as pd
 from agilerl.components.replay_buffer import ReplayBuffer
 import numpy
@@ -15,7 +13,9 @@ class MADDPG:
     """
     Implements Multi-Agent Deep Deterministic Policy Gradient Algorithm
     """
-    def __init__(self,obs_size:int,action_size:int,agent_num:int,gamma:float, eps:float,tau:float,threshold:int,device:str, eps_decay:int=1000):
+    def __init__(self,obs_size:int,action_size:int,agent_num:int,gamma:float,
+                 eps:float,tau:float,threshold:int,device:str,
+                 batch_size = 1024,eps_decay:int=1000):
         """
 
         @param obs_size:
@@ -46,7 +46,7 @@ class MADDPG:
         self.eps = torch.tensor(eps).to(device)
         self.eps_decay = torch.tensor(eps_decay).to(device)
         self.tau = torch.tensor(tau).to(device)
-        self.batch_size = 8
+        self.batch_size = batch_size
         self.replay = ReplayBuffer(storage=ListStorage(max_size=1024),batch_size=self.batch_size)
         self.q_optim = []
         self.p_optim = []
@@ -55,9 +55,11 @@ class MADDPG:
         self.steps = 0
         self.agents = []
         try:
-            self.training_logs = pd.read_csv("./training_record.csv")
+            self.training_logs = pd.read_csv("./training_record_MADDPG.csv")
+            self.performance_logs = pd.read_csv("./performance_record_MADDPG.csv")
         except Exception as e:
             self.training_logs = pd.DataFrame()
+            self.performance_logs = pd.DataFrame()
 
         for i in range(0,agent_num):
             self.agents.append(Agent(i,action_size,obs_size,agent_num,device))
@@ -91,6 +93,7 @@ class MADDPG:
             return
         self.replay.add(TensorDict({"obs":obs_old, "act":act, "rew":reward, "nobs":obs_new}))
 
+
     def get_action(self,obs):
         """
 
@@ -121,7 +124,7 @@ class MADDPG:
         @return:
         @rtype:
         """
-        if len(self.replay) < self.threshold:
+        if len(self.replay) < self.threshold and len(self.replay)%self.threshold:
             return
 
         samples = self.replay.sample()
@@ -183,6 +186,7 @@ class MADDPG:
             for j in range(self.batch_size):
                 q_inp = torch.tensor(gobs[j]+gact_curr[j]).to(self.device)
                 cur_pol = torch.tensor(act_curr[i][j]).to(self.device)
+
                 cur_pol_weight = torch.nn.functional.gumbel_softmax(cur_pol,hard=True)
                 cur_pol  = torch.matmul(cur_pol,cur_pol_weight)
                 cur_rew = agent.get_reward(q_inp)
@@ -206,7 +210,8 @@ class MADDPG:
                 target_param.data.copy_(target_param.data * (1.0 - self.tau) + param.data * self.tau)
 
             agent.save_checkpoint(loss,exp_ret)
-            self.training_logs = pd.concat((self.training_logs, pd.DataFrame({"timestamp":int(time.time()),"agent_num":i,"mean_q_loss":loss.detach().to("cpu"),"mean_exp_return":exp_ret.detach().to("cpu")})),ignore_index=True)
+            self.training_logs = pd.concat((self.training_logs, pd.DataFrame({"step":self.steps,"agent_num":i,"mean_q_loss":loss.detach().to("cpu"),"mean_exp_return":exp_ret.detach().to("cpu")})),ignore_index=True)
 
     def save_results(self):
-        self.training_logs.to_csv("./training_record.csv")
+        self.training_logs.to_csv("./training_record_MADDPG.csv")
+        self.performance_logs.to_csv("./performance_record_MADDPG.csv")

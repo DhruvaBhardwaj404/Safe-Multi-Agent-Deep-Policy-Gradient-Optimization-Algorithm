@@ -210,7 +210,7 @@ class MADDPG:
                 target_param.data.copy_(target_param.data * (1.0 - self.tau) + param.data * self.tau)
 
             agent.save_checkpoint(loss,exp_ret)
-            self.training_logs = pd.concat((self.training_logs, pd.DataFrame({"step":self.steps,"agent_num":i,"mean_q_loss":loss.detach().to("cpu"),"mean_exp_return":exp_ret.detach().to("cpu")})),ignore_index=True)
+            self.training_logs = pd.concat((self.training_logs, pd.DataFrame({"step":self.steps,"agent_num":i,"mean_q_loss":loss.detach().to("cpu").numpy(),"mean_exp_return":exp_ret.detach().to("cpu")})),ignore_index=True)
 
     def save_results(self):
         self.training_logs.to_csv("./training_record_MADDPG.csv")

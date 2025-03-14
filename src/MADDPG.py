@@ -186,9 +186,9 @@ class MADDPG:
             for j in range(self.batch_size):
                 q_inp = torch.tensor(gobs[j]+gact_curr[j]).to(self.device)
                 cur_pol = torch.tensor(act_curr[i][j]).to(self.device)
-
                 cur_pol_weight = torch.nn.functional.gumbel_softmax(cur_pol,hard=True)
                 cur_pol  = torch.matmul(cur_pol,cur_pol_weight)
+                cur_pol = torch.log(cur_pol)
                 cur_rew = agent.get_reward(q_inp)
                 exp_ret = exp_ret - cur_pol*cur_rew
             exp_ret = torch.divide(exp_ret, self.batch_size)

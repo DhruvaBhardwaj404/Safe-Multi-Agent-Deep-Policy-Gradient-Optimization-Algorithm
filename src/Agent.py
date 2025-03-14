@@ -52,6 +52,7 @@ class Agent:
             add_rand = torch.tensor(numpy.random.normal(0,1,size=(len(act)))).to(self.device)
             act = act + add_rand
             act = torch.tensor(act).to(self.device,dtype=torch.float32)
+            act = torch.sigmoid(act)
             return act
         else:
             return  self.policy.forward(obs)

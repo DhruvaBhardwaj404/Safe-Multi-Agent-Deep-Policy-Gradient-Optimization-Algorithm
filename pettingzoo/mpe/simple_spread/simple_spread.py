@@ -171,7 +171,7 @@ class Scenario(BaseScenario):
     def dangerously_close(self, agent1, agent2):
         delta_pos = agent1.state.p_pos - agent2.state.p_pos
         dist = np.sqrt(np.sum(np.square(delta_pos)))
-        dist_min = agent1.size + agent2.size
+        dist_min = (agent1.size + agent2.size)*3
         if 0 < dist <dist_min:
             return 1
         elif 1.5*dist_min < dist:

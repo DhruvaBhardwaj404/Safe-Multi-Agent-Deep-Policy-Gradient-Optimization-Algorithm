@@ -57,7 +57,7 @@ class CMADDPG:
         self.steps = 0
         self.agents = []
         self.dual_variable = [torch.tensor(0.0, requires_grad=True) for c in local_constraints]
-        self.dual_optim = torch.optim.Adam(self.dual_variable)
+        self.dual_optim = torch.optim.Adam(self.dual_variable,lr=0.01)
 
         self.local_constraints = local_constraints
         # try:

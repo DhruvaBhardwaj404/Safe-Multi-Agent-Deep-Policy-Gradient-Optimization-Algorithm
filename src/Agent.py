@@ -39,7 +39,7 @@ class Agent:
         self.policy = DPN(obs_size,action_size,device)
         self.policy.apply(init_weights)
         self.policy_target = deepcopy(self.policy)
-        self.policy_grad = torch.optim.Adam(self.policy.model.parameters())
+        self.policy_grad = torch.optim.Adam(self.policy.model.parameters(),lr)
 
 
         self.loss_q = None

@@ -34,16 +34,21 @@ def run_CMADDPG(eps=0.5):
             act_ind = get_max_action_index(act)
             actions = {agent: action for agent, action in zip(env.agents, act_ind)}
             observations, rewards, terminations, truncations, infos, cost = env.step(actions)
+
+
             mean_reward = convert_dict_to_tensors(rewards).mean()
             mean_cost = convert_dict_to_tensors(cost).mean()
+
             writer.add_scalar("Reward", mean_reward, epoch)
             writer.add_scalar("Cost", mean_cost, epoch)
 
             control.add_to_replay(observations, act, rewards, observations, cost)
-            Q_loss, C_loss = control.update()
+            Q_loss, C_loss, Dual_variable = control.update()
             if Q_loss is not None:
                 writer.add_scalar("C loss", C_loss, epoch)
                 writer.add_scalar("Q loss", Q_loss, epoch)
+                for i,l in enumerate(Dual_variable):
+                    writer.add_scalar(f"Lambda {i}", l, epoch)
 
         if episode % 10 == 0:
             # control.save_results()

@@ -120,9 +120,9 @@ class CMADDPG:
         @rtype:
         """
         if len(self.replay) < self.threshold:
-            return None,None
+            return None,None,None
         if not len(self.replay)%self.threshold==0:
-            return None,None
+            return None,None,None
 
         num_agents = len(self.agents)
         samples = self.replay.sample()
@@ -196,11 +196,13 @@ class CMADDPG:
             q_value = agent.get_reward(q_input)
 
             exp_ret =  - (log_pol * q_value)
-            exp_ret -= self.dual_variable[i] * (log_pol * cost_batch[i] - self.local_constraints[i]).mean()
+            exp_ret += self.dual_variable[i] * (log_pol * cost_batch[i] - self.local_constraints[i]).mean()
             exp_ret = exp_ret.mean()
             agent.policy_grad.zero_grad()
+            self.dual_optim.zero_grad()
             exp_ret.backward(retain_graph=True)
             agent.policy_grad.step()
+            self.dual_optim.step()
 
             # print("Updating")
         # samples = self.replay.sample()
@@ -315,7 +317,7 @@ class CMADDPG:
 
             agent.save_checkpoint(loss_q_r,loss_q_c,exp_ret)
             
-        return mean_q_loss_reward, mean_q_loss_cost
+        return mean_q_loss_reward, mean_q_loss_cost, self.dual_variable
             # self.training_logs = pd.concat((self.training_logs, pd.DataFrame({"timestamp":int(time.time()),"agent_num":i,"mean_q_loss":loss.detach().to("cpu"),"mean_exp_return":exp_ret.detach().to("cpu")})),ignore_index=True)
 
     # def save_results(self):

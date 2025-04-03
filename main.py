@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 def run_CMADDPG(eps=0.5):
 
-    device = ("cuda" if torch.cuda.is_available() else "cpu")
+    device = "cpu"#("cuda" if torch.cuda.is_available() else "cpu")
     print(device)
     # input()
     M = 100000
@@ -57,7 +57,7 @@ def run_CMADDPG(eps=0.5):
     env.close()
 
 def run_MADDPG(eps=0.5):
-    device = ("cuda" if torch.cuda.is_available() else "cpu")
+    device ="cpu"# ("cuda" if torch.cuda.is_available() else "cpu")
     M = 100000
     length = 25
     c = np.array([0.5, 0.5, 0.5])

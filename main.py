@@ -96,7 +96,7 @@ def run_MADDPG(eps=0.5):
             loss_q = control.update()
             if loss_q is not None:
                 writer.add_scalar("Q loss", loss_q, epoch)
-        mean_reward/=length
+        mean_reward/= length
         # control.performance_logs = pd.concat((control.performance_logs,pd.DataFrame({"episode":[episode],"mean reward":[mean_reward]})),ignore_index=True)
 
         if episode % 10 == 0:

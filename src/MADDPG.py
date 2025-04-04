@@ -15,8 +15,7 @@ class MADDPG:
     Implements Multi-Agent Deep Deterministic Policy Gradient Algorithm
     """
     def __init__(self,obs_size:int,action_size:int,agent_num:int,gamma:float,
-                 eps:float,tau:float,threshold:int,device:str,
-                 batch_size = 1024,eps_decay:int=1000):
+                 tau:float,device:str,batch_size = 1024):
         """
 
         @param obs_size:
@@ -44,14 +43,14 @@ class MADDPG:
         self.obs_size = obs_size
         self.agent_num = agent_num
         self.gamma = torch.tensor(gamma).to(device)
-        self.eps = torch.tensor(eps).to(device)
-        self.eps_decay = torch.tensor(eps_decay).to(device)
+        # self.eps = torch.tensor(eps).to(device)
+        # self.eps_decay = torch.tensor(eps_decay).to(device)
         self.tau = torch.tensor(tau).to(device)
         self.batch_size = batch_size
-        self.replay = ReplayBuffer(storage=ListStorage(max_size=1024),batch_size=self.batch_size)
+        self.replay = ReplayBuffer(storage=ListStorage(max_size=1000000),batch_size=self.batch_size)
         self.q_optim = []
         self.p_optim = []
-        self.threshold = threshold
+        # self.threshold = threshold
         self.device = device
         self.steps = 0
         self.agents = []
@@ -118,11 +117,11 @@ class MADDPG:
         @return:
         @rtype:
         """
-        if len(self.replay) < self.threshold:
+        if len(self.replay) < self.batch_size:
             return None
 
-        if not len(self.replay) % self.threshold == 0:
-            return None
+        # if not len(self.replay) % self.threshold == 0:
+        #     return None
 
         # print("Updating")
         # t1 =time.time()

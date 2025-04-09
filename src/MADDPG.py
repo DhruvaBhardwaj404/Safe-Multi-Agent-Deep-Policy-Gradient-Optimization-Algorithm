@@ -47,7 +47,7 @@ class MADDPG:
         # self.eps_decay = torch.tensor(eps_decay).to(device)
         self.tau = torch.tensor(tau).to(device)
         self.batch_size = batch_size
-        self.replay = ReplayBuffer(storage=ListStorage(max_size=1000000),batch_size=self.batch_size)
+        self.replay = ReplayBuffer(storage=ListStorage(max_size=1024*25),batch_size=self.batch_size)
         self.q_optim = []
         self.p_optim = []
         # self.threshold = threshold
@@ -82,10 +82,10 @@ class MADDPG:
         @return:
         @rtype:
         """
-        reward = convert_dict_to_tensors(reward).to("cpu")
-        obs_old = convert_dict_to_tensors(obs_old).to("cpu")
-        obs_new = convert_dict_to_tensors(obs_new).to("cpu")
-        act = torch.stack(action)
+        reward = convert_dict_to_tensors(reward).to(self.device)
+        obs_old = convert_dict_to_tensors(obs_old).to(self.device)
+        obs_new = convert_dict_to_tensors(obs_new).to(self.device)
+        act = torch.stack(action).to(self.device)
 
         if reward.size()[0]==0:
             return
@@ -183,10 +183,11 @@ class MADDPG:
 
             cur_pol = (cur_policy * pol_weight).sum(dim=1).clone()
             cur_pol = cur_pol.view((self.batch_size, 1))
-            log_pol = torch.log(cur_pol)
-
+            log_pol = cur_pol #using LogSoftMax in the network
+            # print("pol",torch.isinf(log_pol).any())
+            # torch.where(torch.isinf(log_pol), torch.tensor(0.0), log_pol)
+            # print(torch.isinf(log_pol).any())
             q_value = agent.get_reward(q_input_p)
-
             exp_ret = - (log_pol * q_value)
             exp_ret = exp_ret.mean()
 

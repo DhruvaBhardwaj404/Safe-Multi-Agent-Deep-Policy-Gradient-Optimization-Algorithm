@@ -29,9 +29,9 @@ obs_shape = num_agents*6
 
 
 def run_CMADDPG():
-    # torch.manual_seed(100)
-    # np.random.seed(100)
-    device = "cpu"#("cuda" if torch.cuda.is_available() else "cpu")
+    torch.manual_seed(200)
+    np.random.seed(200)
+    device = ("cuda" if torch.cuda.is_available() else "cpu")
 
     #c = np.array([0.3, 0.3, 0.3])
     c = np.array([0.2,0.2,0.2])
@@ -100,9 +100,9 @@ def run_CMADDPG():
     env.close()
 
 def run_MADDPG():
-    # torch.manual_seed(100)
-    # np.random.seed(100)
-    device = "cpu"#("cuda" if torch.cuda.is_available() else "cpu")
+    torch.manual_seed(200)
+    np.random.seed(200)
+    device = ("cuda" if torch.cuda.is_available() else "cpu")
 
     env = simple_spread_v3.parallel_env(N=num_agents,render_mode="ansi", max_cycles=EPISODE_LENGTH)
     writer = SummaryWriter()

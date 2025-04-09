@@ -49,7 +49,7 @@ class CMADDPG:
         # self.eps = torch.tensor(eps).to(device)
         self.tau = torch.tensor(tau).to(device)
         self.batch_size = batch_size
-        self.replay = ReplayBuffer(storage=ListStorage(max_size=1000000),batch_size=self.batch_size)
+        self.replay = ReplayBuffer(storage=ListStorage(max_size=1024*25),batch_size=self.batch_size)
         self.q_optim = []
         self.p_optim = []
         # self.threshold = threshold
@@ -86,10 +86,10 @@ class CMADDPG:
         @return:
         @rtype:
         """
-        reward = convert_dict_to_tensors(reward).to("cpu")
-        cost = convert_dict_to_tensors(cost).to("cpu")
-        obs_old = convert_dict_to_tensors(obs_old).to("cpu")
-        obs_new = convert_dict_to_tensors(obs_new).to("cpu")
+        reward = convert_dict_to_tensors(reward).to(self.device)
+        cost = convert_dict_to_tensors(cost).to(self.device)
+        obs_old = convert_dict_to_tensors(obs_old).to(self.device)
+        obs_new = convert_dict_to_tensors(obs_new).to(self.device)
         act = torch.stack(action) #convert_dict_to_tensors(a)
         # for a in action:
         #     act.append(a)
@@ -201,7 +201,7 @@ class CMADDPG:
 
             cur_pol = (cur_policy * pol_weight).sum(dim=1).clone()
             cur_pol = cur_pol.view((self.batch_size,1))
-            log_pol = torch.log(cur_pol)
+            log_pol = cur_pol #using logsoftmax in the network
 
             q_value = agent.get_reward(q_input_p)
 

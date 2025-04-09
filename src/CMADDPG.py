@@ -56,8 +56,8 @@ class CMADDPG:
         self.device = device
         self.steps = 0
         self.agents = []
-        self.dual_variable = [torch.tensor(5.0, requires_grad=True) for c in local_constraints]
-        self.dual_optim = torch.optim.Adam(self.dual_variable,lr=0.001)
+        self.dual_variable = [torch.tensor(0.0, requires_grad=True) for c in local_constraints]
+        self.dual_optim = torch.optim.Adam(self.dual_variable,lr=0.1)
 
         self.local_constraints = local_constraints
         # try:
@@ -125,12 +125,12 @@ class CMADDPG:
 
         num_agents = len(self.agents)
         samples = self.replay.sample()
-
-        rew_batch = samples["rew"].to(self.device).transpose(0, 1).clone().detach()
-        cost_batch = samples["cost"].to(self.device).transpose(0, 1).clone().detach()
-        obs_batch = samples["obs"].to(self.device).transpose(0, 1).clone().detach()
-        nobs_batch = samples["nobs"].to(self.device).transpose(0, 1).clone().detach()
-        act_batch = samples["act"].to(self.device).transpose(0, 1).clone()
+        with torch.no_grad():
+            rew_batch = samples["rew"].to(self.device).transpose(0, 1).clone().detach()
+            cost_batch = samples["cost"].to(self.device).transpose(0, 1).clone().detach()
+            obs_batch = samples["obs"].to(self.device).transpose(0, 1).clone().detach()
+            nobs_batch = samples["nobs"].to(self.device).transpose(0, 1).clone().detach()
+            act_batch = samples["act"].to(self.device).transpose(0, 1).clone()
 
         nact_batch = torch.stack([
             self.agents[i].get_action_target(nobs_batch[i])
@@ -141,9 +141,11 @@ class CMADDPG:
             for i in range(num_agents)
             ])
 
-        gobs_batch = obs_batch.permute(1, 0, 2).reshape(self.batch_size, self.obs_size*num_agents)
-        gact_batch = act_batch.permute(1, 0, 2).reshape(self.batch_size, self.action_size*num_agents)
-        gnobs_batch = nobs_batch.permute(1, 0, 2).reshape(self.batch_size, self.obs_size*num_agents)
+        with torch.no_grad():
+            gobs_batch = obs_batch.permute(1, 0, 2).reshape(self.batch_size, self.obs_size*num_agents)
+            gnobs_batch = nobs_batch.permute(1, 0, 2).reshape(self.batch_size, self.obs_size*num_agents)
+
+        gact_batch = act_batch.permute(1, 0, 2).reshape(self.batch_size, self.action_size * num_agents)
         gnact_batch = nact_batch.permute(1, 0, 2).reshape(self.batch_size, self.action_size*num_agents)
         gcur_act_batch = cur_act_batch.permute(1, 0, 2).reshape(self.batch_size, self.action_size*num_agents)
 
@@ -156,7 +158,7 @@ class CMADDPG:
 
         for i, agent in enumerate(self.agents):
 
-            q_input_r = q_input.clone().detach()
+            q_input_r = q_input.clone()
             q_input_t_r = q_target_input.clone().detach()
             rew = rew_batch[i].view((self.batch_size,1)).clone().detach()
             q_r_t = agent.q_function_target_r(q_input_t_r)
@@ -170,6 +172,9 @@ class CMADDPG:
             agent.q_grad_r.zero_grad()
             loss_q_r.backward(retain_graph=True)
             agent.q_grad_r.step()
+
+            del q_input_r,q_input_t_r,rew
+
             cost = cost_batch[i].view((self.batch_size,1)).clone().detach()
             q_input_c = q_input.clone().detach()
             q_input_t_c = q_target_input.clone().detach()
@@ -185,6 +190,8 @@ class CMADDPG:
             agent.q_grad_c.zero_grad()
             loss_q_c.backward(retain_graph=True)
             agent.q_grad_c.step()
+
+            del q_input_c,q_input_t_c
 
             q_input_p = q_input_pol.clone().detach()
 
@@ -210,7 +217,7 @@ class CMADDPG:
             agent.policy_grad.step()
             self.dual_optim.step()
 
-
+            del q_input_p,cost
 
             with torch.no_grad():
                 for target_param, param in zip(agent.policy_target.model.parameters(), agent.policy.model.parameters()):
@@ -223,7 +230,7 @@ class CMADDPG:
                     target_param.data.copy_(target_param.data * (1.0 - self.tau) + param.data * self.tau)
 
                 # agent.save_checkpoint(loss_q_r,loss_q_c,exp_ret)
-        gc.collect()
+        del q_input_pol
         return mean_q_loss_reward, mean_q_loss_cost, self.dual_variable
             # self.training_logs = pd.concat((self.training_logs, pd.DataFrame({"timestamp":int(time.time()),"agent_num":i,"mean_q_loss":loss.detach().to("cpu"),"mean_exp_return":exp_ret.detach().to("cpu")})),ignore_index=True)
 

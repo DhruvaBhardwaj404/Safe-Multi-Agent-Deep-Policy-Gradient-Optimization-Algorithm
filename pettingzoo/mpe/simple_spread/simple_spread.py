@@ -173,11 +173,11 @@ class Scenario(BaseScenario):
         dist = np.sqrt(np.sum(np.square(delta_pos)))
         dist_min = (agent1.size + agent2.size)*3
         if 0 < dist <dist_min:
-            return 1
+            return 2
         elif 1.5*dist_min < dist:
             return 0
         else:
-            return ((1.5*dist_min)-dist)**2
+            return 2*(((1.5*dist_min)-dist)**2)
 
 
     def reward(self, agent, world):

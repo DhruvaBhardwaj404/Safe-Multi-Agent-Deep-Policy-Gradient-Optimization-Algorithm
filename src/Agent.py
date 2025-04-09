@@ -275,3 +275,4 @@ class ConstrainedAgent:
         torch.save(self.q_function_target_c.model.state_dict(), f"./model_parameters/agent{self.id}_q_target_c.pth")
         torch.save({"loss_q_c": loss_q_c}, f"./model_parameters/agent{self.id}_loss_q_c.pth")
         self.loss_q_c = loss_q_c
+

@@ -8,7 +8,7 @@ class DPN(nn.Module):
         self.model = torch.nn.Sequential(nn.Linear(obs_size, h1),
                                          nn.ReLU(),
                                          nn.Linear(h1,action_size),
-                                         nn.Softmax()
+                                         nn.LogSoftmax()
                                          ).to(device)
 
     def forward(self, X):

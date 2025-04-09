@@ -11,7 +11,7 @@ from src.Agent import ConstrainedAgent as Agent
 from tensordict import TensorDict
 from torchrl.data import ReplayBuffer, ListStorage
 import warnings
-
+import gc
 
 class CMADDPG:
     """
@@ -223,7 +223,7 @@ class CMADDPG:
                     target_param.data.copy_(target_param.data * (1.0 - self.tau) + param.data * self.tau)
 
                 # agent.save_checkpoint(loss_q_r,loss_q_c,exp_ret)
-
+        gc.collect()
         return mean_q_loss_reward, mean_q_loss_cost, self.dual_variable
             # self.training_logs = pd.concat((self.training_logs, pd.DataFrame({"timestamp":int(time.time()),"agent_num":i,"mean_q_loss":loss.detach().to("cpu"),"mean_exp_return":exp_ret.detach().to("cpu")})),ignore_index=True)
 

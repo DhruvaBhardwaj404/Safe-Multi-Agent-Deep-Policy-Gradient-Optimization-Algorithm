@@ -8,7 +8,7 @@ from src.Agent import Agent
 from tensordict import TensorDict
 from torchrl.data import ReplayBuffer, ListStorage
 import warnings
-
+import gc
 
 class MADDPG:
     """
@@ -203,7 +203,7 @@ class MADDPG:
 
             agent.save_checkpoint(None,None)
 
-
+        gc.collect()
         return mean_q_loss_reward
 
 

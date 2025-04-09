@@ -31,13 +31,13 @@ class Agent:
         """
         self.id = agent_id
         self.q_function = DQN((action_size+obs_size)*num_agents,device)
-        self.q_function.apply(init_weights)
+        # self.q_function.apply(init_weights)
 
         self.q_function_target = deepcopy(self.q_function)
         self.q_grad = torch.optim.Adam(self.q_function.model.parameters(),lr)
 
         self.policy = DPN(obs_size,action_size,device)
-        self.policy.apply(init_weights)
+        # self.policy.apply(init_weights)
         self.policy_target = deepcopy(self.policy)
         self.policy_grad = torch.optim.Adam(self.policy.model.parameters(),lr)
 

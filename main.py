@@ -12,7 +12,8 @@ from src.helpers import *
 import torch
 from tqdm import tqdm
 import imageio
-
+from pympler import tracker
+import gc
 
 LOG_EVERY = 100
 FLUSH_EVERY = 10000
@@ -60,12 +61,15 @@ def run_CMADDPG():
 
 
         if episode % TRAIN_EVERY ==0:
+            # memory_tracker.print_diff()
             Q_loss, C_loss, Dual_variable = control.update()
             if Q_loss is not None:
                 writer.add_scalar("C loss", C_loss, epoch)
                 writer.add_scalar("Q loss", Q_loss, epoch)
                 for i, l in enumerate(Dual_variable):
                     writer.add_scalar(f"Lambda {i}", l, epoch)
+            # memory_tracker.print_diff()
+            gc.collect()
 
         if episode % LOG_EVERY ==0:
             writer.add_scalar("Reward", eps_rew, epoch)
@@ -134,10 +138,13 @@ def run_MADDPG():
         # control.performance_logs = pd.concat((control.performance_logs,pd.DataFrame({"episode":[episode],"mean reward":[mean_reward]})),ignore_index=True)
 
         if episode % TRAIN_EVERY==0:
+            # memory_tracker.print_diff()
             loss_q = control.update()
             if loss_q is not None:
                 writer.add_scalar("Q loss", loss_q, epoch)
-
+            # memory_tracker.print_diff()
+            gc.collect()
+            # memory_tracker.print_diff()
         if episode % LOG_EVERY == 0:
             writer.add_scalar("Algorithm Reward", eps_reward, epoch)
             writer.add_scalar("Reward", eps_env_reward, epoch)
@@ -169,6 +176,8 @@ def run_MADDPG():
 
 if __name__ == "__main__":
     algo = sys.argv[1]
+
+    memory_tracker = tracker.SummaryTracker()
 
     if algo == "M":
         run_MADDPG()

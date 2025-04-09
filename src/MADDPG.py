@@ -173,6 +173,7 @@ class MADDPG:
             loss_q_r.backward(retain_graph=True)
             agent.q_grad.step()
 
+            del q_input_r,q_input_t_r,rew
 
             q_input_p = q_input_pol.clone().detach()
 
@@ -195,6 +196,8 @@ class MADDPG:
 
             agent.policy_grad.step()
 
+            del q_input_p
+
             for target_param, param in zip(agent.policy_target.model.parameters(), agent.policy.model.parameters()):
                 target_param.data.copy_(target_param.data * (1.0 - self.tau) + param.data * self.tau)
 
@@ -203,7 +206,7 @@ class MADDPG:
 
             agent.save_checkpoint(None,None)
 
-        gc.collect()
+        del q_input_pol
         return mean_q_loss_reward
 
 

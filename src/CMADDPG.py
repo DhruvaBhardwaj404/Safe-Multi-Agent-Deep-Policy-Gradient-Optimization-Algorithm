@@ -57,7 +57,7 @@ class CMADDPG:
         self.steps = 0
         self.agents = []
         self.dual_variable = [torch.tensor(0.0, requires_grad=True) for c in local_constraints]
-        self.dual_optim = torch.optim.Adam(self.dual_variable,lr=0.1)
+        self.dual_optim = torch.optim.SGD(self.dual_variable,lr=0.1)
 
         self.local_constraints = local_constraints
         # try:
@@ -204,9 +204,9 @@ class CMADDPG:
             log_pol = cur_pol #using logsoftmax in the network
 
             q_value = agent.get_reward(q_input_p)
-
+            q_c_value = agent.get_cost(q_input_p)
             exp_ret =  - (log_pol * q_value)
-            exp_ret = exp_ret + self.dual_variable[i] * (log_pol * cost - self.local_constraints[i])
+            exp_ret = exp_ret + self.dual_variable[i] * (log_pol * q_c_value  - self.local_constraints[i])
             exp_ret = exp_ret.mean()
 
             agent.policy_grad.zero_grad()

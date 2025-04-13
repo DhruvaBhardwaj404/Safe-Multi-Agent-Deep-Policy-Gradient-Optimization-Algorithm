@@ -192,7 +192,7 @@ class Scenario(BaseScenario):
         cost = 0
         for a in world.agents:
             if a != agent:
-                cost += self.dangerously_close(agent, a)
+                cost -= self.dangerously_close(agent, a)
         return cost
 
 

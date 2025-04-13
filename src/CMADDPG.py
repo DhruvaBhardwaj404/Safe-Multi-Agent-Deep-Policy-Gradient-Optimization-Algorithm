@@ -121,7 +121,7 @@ class CMADDPG:
         @rtype:
         """
         if len(self.replay) < self.batch_size:
-            return None,None,None
+            return None,None,None,None
 
         num_agents = len(self.agents)
         samples = self.replay.sample()
@@ -155,6 +155,7 @@ class CMADDPG:
 
         mean_q_loss_reward = 0
         mean_q_loss_cost = 0
+        mean_J_C = 0
 
         for i, agent in enumerate(self.agents):
 
@@ -205,14 +206,16 @@ class CMADDPG:
 
             q_value = agent.get_reward(q_input_p)
             q_c_value = agent.get_cost(q_input_p)
-            exp_ret =  - (log_pol * q_value)
-            exp_ret = exp_ret + self.dual_variable[i] * (log_pol * q_c_value  - self.local_constraints[i])
-            exp_ret = exp_ret.mean()
+            J_r =  (log_pol * q_value)
+            J_c = log_pol * q_c_value
+            mean_J_C += J_c.mean()
+            L = J_r + self.dual_variable[i] * (J_c  - self.local_constraints[i])
+            L = L.mean()
 
             agent.policy_grad.zero_grad()
             self.dual_optim.zero_grad()
 
-            exp_ret.backward(retain_graph=True)
+            L.backward(retain_graph=True)
 
             agent.policy_grad.step()
             self.dual_optim.step()
@@ -229,9 +232,9 @@ class CMADDPG:
                 for target_param, param in zip(agent.q_function_target_r.model.parameters(), agent.q_function_r.model.parameters()):
                     target_param.data.copy_(target_param.data * (1.0 - self.tau) + param.data * self.tau)
 
-                # agent.save_checkpoint(loss_q_r,loss_q_c,exp_ret)
+                agent.save_checkpoint(loss_q_r,loss_q_c,L)
         del q_input_pol
-        return mean_q_loss_reward, mean_q_loss_cost, self.dual_variable
+        return mean_q_loss_reward/num_agents, mean_q_loss_cost/num_agents, self.dual_variable,mean_J_C/num_agents
             # self.training_logs = pd.concat((self.training_logs, pd.DataFrame({"timestamp":int(time.time()),"agent_num":i,"mean_q_loss":loss.detach().to("cpu"),"mean_exp_return":exp_ret.detach().to("cpu")})),ignore_index=True)
 
     # def save_results(self):

@@ -56,15 +56,15 @@ class Agent:
         @return: tensor containing probabilities of actions
         @rtype: m-dim tensor
         """
-        if explore:
-            act = self.policy.forward(obs)
-            add_rand = torch.tensor(numpy.random.normal(0,1,size=(len(act)))).to(self.device)
-            act = act + add_rand
-            act = torch.tensor(act).to(self.device,dtype=torch.float32)
-            act = torch.sigmoid(act)
-            return act
-        else:
-            return  self.policy.forward(obs)
+        # if explore:
+        #     act = self.policy.forward(obs)
+        #     add_rand = torch.tensor(numpy.random.normal(0,1,size=(len(act)))).to(self.device)
+        #     act = act + add_rand
+        #     act = torch.tensor(act).to(self.device,dtype=torch.float32)
+        #     act = torch.sigmoid(act)
+        #     return act
+        # else:
+        return  self.policy.forward(obs)
 
     def get_reward(self,obs:torch.tensor):
         """
@@ -185,15 +185,15 @@ class ConstrainedAgent:
         @return: tensor containing probabilities of actions
         @rtype: m-dim tensor
         """
-        if explore:
-            act = self.policy.forward(obs)
-            add_rand = torch.tensor(numpy.random.normal(0,1,size=(len(act)))).to(self.device)
-            act = act + add_rand
-            act = torch.tensor(act).to(self.device,dtype=torch.float32)
-            act = torch.sigmoid(act)
-            return act
-        else:
-            return  self.policy.forward(obs)
+        # if explore:
+        #     act = self.policy.forward(obs)
+        #     add_rand = torch.tensor(numpy.random.normal(0,1,size=(len(act)))).to(self.device)
+        #     act = act + add_rand
+        #     act = torch.tensor(act).to(self.device,dtype=torch.float32)
+        #     act = torch.sigmoid(act)
+        #     return act
+        # else:
+        return  self.policy.forward(obs)
 
     def get_reward(self,obs:torch.tensor):
         """

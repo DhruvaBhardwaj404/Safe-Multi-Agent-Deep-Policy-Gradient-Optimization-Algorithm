@@ -19,7 +19,7 @@ LOG_EVERY = 100
 FLUSH_EVERY = 10000
 TRAIN_EVERY = 100
 
-MAX_EPISODES = 100000
+MAX_EPISODES = 200000
 EPISODE_LENGTH =25
 
 VISUALIZE_EVERY = 10000
@@ -31,13 +31,13 @@ obs_shape = num_agents*6
 def run_CMADDPG():
     torch.manual_seed(200)
     np.random.seed(200)
-    device = "cpu"#("cuda" if torch.cuda.is_available() else "cpu")
+    device = ("cuda" if torch.cuda.is_available() else "cpu")
 
     #c = np.array([0.3, 0.3, 0.3])
-    c = np.array([0.2,0.2,0.2])
+    c = np.array([0.5,0.5])
     env = simple_spread_v3.parallel_env(N=num_agents,render_mode="ansi", max_cycles=EPISODE_LENGTH)
     writer = SummaryWriter()
-    control = CMADDPG(obs_shape, 5, num_agents, 0.95,0.01, device, c,batch_size=1024)
+    control = CMADDPG(obs_shape, 5, num_agents, 0.95,0.01, device, c,batch_size=32)
     epoch = 0
     for episode in tqdm(range(MAX_EPISODES+1)):
 
@@ -62,10 +62,11 @@ def run_CMADDPG():
 
         if episode % TRAIN_EVERY ==0:
             # memory_tracker.print_diff()
-            Q_loss, C_loss, Dual_variable = control.update()
+            Q_loss, C_loss, Dual_variable,J_c = control.update()
             if Q_loss is not None:
                 writer.add_scalar("C loss", C_loss, epoch)
                 writer.add_scalar("Q loss", Q_loss, epoch)
+                writer.add_scalar("J_c", J_c, epoch)
                 for i, l in enumerate(Dual_variable):
                     writer.add_scalar(f"Lambda {i}", l, epoch)
             # memory_tracker.print_diff()
@@ -102,7 +103,7 @@ def run_CMADDPG():
 def run_MADDPG():
     torch.manual_seed(200)
     np.random.seed(200)
-    device = "cpu"#("cuda" if torch.cuda.is_available() else "cpu")
+    device = ("cuda" if torch.cuda.is_available() else "cpu")
 
     env = simple_spread_v3.parallel_env(N=num_agents,render_mode="ansi", max_cycles=EPISODE_LENGTH)
     writer = SummaryWriter()
@@ -125,7 +126,7 @@ def run_MADDPG():
 
             env_reward = deepcopy(rewards)
             for k in rewards:
-                rewards[k] = rewards[k] - cost[k]
+                rewards[k] = rewards[k] + cost[k]
 
             mean_env_reward = convert_dict_to_tensors(env_reward).mean()
             mean_reward = convert_dict_to_tensors(rewards).mean()

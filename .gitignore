@@ -1,5 +1,6 @@
-model_parameters_MADDPG/
+model_parameters*/
 runs/
-Training_Visualizations_MADDPG/
-
+Training_Visualizations*/
+model_parameters/
+Training_Visualizations/
 

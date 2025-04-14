@@ -56,8 +56,8 @@ class CMADDPG:
         self.device = device
         self.steps = 0
         self.agents = []
-        self.dual_variable = [torch.tensor(0.0, requires_grad=True) for c in local_constraints]
-        self.dual_optim = torch.optim.SGD(self.dual_variable,lr=0.1)
+        self.dual_variable = [torch.tensor(0.0, requires_grad=False) for _ in local_constraints]
+        # self.dual_optim = torch.optim.SGD(self.dual_variable,lr=0.1)
 
         self.local_constraints = local_constraints
         # try:
@@ -206,19 +206,20 @@ class CMADDPG:
 
             q_value = agent.get_reward(q_input_p)
             q_c_value = agent.get_cost(q_input_p)
-            J_r =  (log_pol * q_value)
+            J_r =  -(log_pol * q_value)
             J_c = log_pol * q_c_value
-            mean_J_C += J_c.mean()
-            L = J_r + self.dual_variable[i] * (J_c  - self.local_constraints[i])
+            mean_J_C = J_c.mean()
+            L = J_r - self.dual_variable[i] * (J_c  - self.local_constraints[i])
             L = L.mean()
 
             agent.policy_grad.zero_grad()
-            self.dual_optim.zero_grad()
+            # self.dual_optim.zero_grad()
 
             L.backward(retain_graph=True)
-
             agent.policy_grad.step()
-            self.dual_optim.step()
+            with torch.no_grad():
+                self.dual_variable[i] = self.dual_variable[i] - 0.1*torch.mean((q_c_value - self.local_constraints[i]))
+            # self.dual_optim.step()
 
             del q_input_p,cost
 

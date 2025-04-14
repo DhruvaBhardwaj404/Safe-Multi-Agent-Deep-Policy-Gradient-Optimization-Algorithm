@@ -31,13 +31,13 @@ obs_shape = num_agents*6
 def run_CMADDPG():
     torch.manual_seed(200)
     np.random.seed(200)
-    device = ("cuda" if torch.cuda.is_available() else "cpu")
+    device = "cpu"#("cuda" if torch.cuda.is_available() else "cpu")
 
     #c = np.array([0.3, 0.3, 0.3])
     c = np.array([0.5,0.5])
     env = simple_spread_v3.parallel_env(N=num_agents,render_mode="ansi", max_cycles=EPISODE_LENGTH)
     writer = SummaryWriter()
-    control = CMADDPG(obs_shape, 5, num_agents, 0.95,0.01, device, c,batch_size=32)
+    control = CMADDPG(obs_shape, 5, num_agents, 0.95,0.01, device, c,batch_size=1024)
     epoch = 0
     for episode in tqdm(range(MAX_EPISODES+1)):
 
@@ -103,11 +103,11 @@ def run_CMADDPG():
 def run_MADDPG():
     torch.manual_seed(200)
     np.random.seed(200)
-    device = ("cuda" if torch.cuda.is_available() else "cpu")
+    device = "cpu"#("cuda" if torch.cuda.is_available() else "cpu")
 
     env = simple_spread_v3.parallel_env(N=num_agents,render_mode="ansi", max_cycles=EPISODE_LENGTH)
     writer = SummaryWriter()
-    control = MADDPG(obs_shape, 5, num_agents, 0.95, 0.01, device,batch_size=1024)
+    control = MADDPG(obs_shape, 5, num_agents, 0.95, 0.01, device,batch_size=32)
     t1 = int(time.time())
     epoch = 0
     for episode in tqdm(range(MAX_EPISODES+1)):

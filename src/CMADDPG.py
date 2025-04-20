@@ -206,10 +206,10 @@ class CMADDPG:
 
             q_value = agent.get_reward(q_input_p)
             q_c_value = agent.get_cost(q_input_p)
-            J_r =  -(log_pol * q_value)
-            J_c = log_pol * q_c_value
-            mean_J_C = J_c.mean()
-            L = J_r - self.dual_variable[i] * (J_c  - self.local_constraints[i])
+            J_r_p =  -(log_pol * q_value)
+            J_c_p = -log_pol * q_c_value
+            mean_J_C += q_c_value.mean()
+            L = J_r_p - self.dual_variable[i] * (J_c_p  - self.local_constraints[i])
             L = L.mean()
 
             agent.policy_grad.zero_grad()

@@ -57,7 +57,7 @@ def run_CMADDPG_with_Q_cost():
 
             distance = convert_dict_to_tensors(rewards)
             mean_cost = convert_dict_to_tensors(cost).mean()
-            eps_reward += min(distance)
+            eps_reward += max(distance)
             eps_distance += -1 * distance.mean()
             eps_cost += mean_cost
 
@@ -151,7 +151,7 @@ def run_CMADDPG():
 
             distance = convert_dict_to_tensors(rewards)
             mean_cost = convert_dict_to_tensors(cost).mean()
-            eps_reward += min(distance)
+            eps_reward += max(distance)
             eps_distance += -1 * distance.mean()
             eps_cost += mean_cost
 
@@ -239,7 +239,7 @@ def run_MADDPG():
 
             distance = convert_dict_to_tensors(env_reward)
             mean_cost = convert_dict_to_tensors(cost).mean()
-            eps_reward += min(distance)
+            eps_reward += max(distance)
             mean_distance += -1*distance.mean()
             eps_cost += mean_cost
 
@@ -258,7 +258,7 @@ def run_MADDPG():
             # memory_tracker.print_diff()
         if episode % LOG_EVERY == 0:
             writer.add_scalar("Global Reward", eps_reward, epoch)
-            writer.add_scalar("Mean distance", mean_distance, epoch)
+            writer.add_scalar("Mean Distance From closest Landmark", mean_distance, epoch)
             writer.add_scalar("Average Cost", eps_cost, epoch)
 
         if episode % FLUSH_EVERY == 0:

@@ -189,8 +189,8 @@ class CMADDPG_NQ:
             q_value = agent.get_reward(q_input_p)
             J_r_p =  -(log_pol * q_value)
             J_c_p = -log_pol*cost_batch[i].clone().detach()
-            mean_J_C += cost_batch[i].mean()
-            L = J_r_p - self.dual_variable[i] * (J_c_p  - self.local_constraints[i])
+            mean_J_C += J_c_p.mean()
+            L = J_r_p + self.dual_variable[i] * (J_c_p  - self.local_constraints[i])
             L = L.mean()
 
             agent.policy_grad.zero_grad()

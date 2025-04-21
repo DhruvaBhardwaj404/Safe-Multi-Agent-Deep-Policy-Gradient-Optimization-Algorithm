@@ -111,7 +111,7 @@ def run_CMADDPG():
     device = "cpu"  # ("cuda" if torch.cuda.is_available() else "cpu")
 
     # c = np.array([0.3, 0.3, 0.3])
-    c = np.array([0.5, 0.5])
+    c = np.array([1.5, 1.5])
     env = simple_spread_v3.parallel_env(N=num_agents, render_mode="ansi", max_cycles=EPISODE_LENGTH)
     writer = SummaryWriter()
 
@@ -235,7 +235,7 @@ def run_MADDPG():
 
             env_reward = deepcopy(rewards)
             for k in rewards:
-                rewards[k] = rewards[k] + cost[k]
+                rewards[k] = rewards[k] - cost[k]
 
             distance = convert_dict_to_tensors(env_reward)
             mean_cost = convert_dict_to_tensors(cost).mean()

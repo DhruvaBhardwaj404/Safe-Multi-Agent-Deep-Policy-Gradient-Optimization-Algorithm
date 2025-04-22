@@ -187,10 +187,11 @@ class CMADDPG_NQ:
             log_pol = cur_pol #using logsoftmax in the network
 
             q_value = agent.get_reward(q_input_p)
-            J_r_p =  -(log_pol * q_value)
-            J_c_p = -log_pol*cost_batch[i].clone().detach()
-            mean_J_C += J_c_p.mean()
-            L = J_r_p + self.dual_variable[i] * (J_c_p  - self.local_constraints[i])
+            J_r_p =  (log_pol * q_value)
+
+            J_c_p = log_pol*(cost_batch[i].clone().detach())
+            mean_J_C += cost_batch[i].mean()
+            L = J_r_p - self.dual_variable[i] * (J_c_p + self.local_constraints[i])
             L = L.mean()
 
             agent.policy_grad.zero_grad()
@@ -199,7 +200,7 @@ class CMADDPG_NQ:
             L.backward(retain_graph=True)
             agent.policy_grad.step()
             with torch.no_grad():
-                self.dual_variable[i] = self.dual_variable[i] - 0.1*torch.mean((cost_batch[i].clone().detach()- self.local_constraints[i]))
+                self.dual_variable[i] = self.dual_variable[i] + 0.001*torch.mean((cost_batch[i].clone().detach()- self.local_constraints[i]))
             # self.dual_optim.step()
 
             del q_input_p,J_c_p

@@ -111,7 +111,7 @@ def run_CMADDPG():
     device = "cpu"  # ("cuda" if torch.cuda.is_available() else "cpu")
 
     # c = np.array([0.3, 0.3, 0.3])
-    c = np.array([0.1, 0.1])
+    c = np.array([0.5, 0.5])
     env = simple_spread_v3.parallel_env(N=num_agents, render_mode="ansi", max_cycles=EPISODE_LENGTH)
     writer = SummaryWriter()
 

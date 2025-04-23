@@ -216,7 +216,7 @@ class CMADDPG:
 
             J_c_p = -log_pol * (cost)
             mean_J_C += q_c_value.mean()
-            L = J_r_p - self.dual_variable[i] * (J_c_p  +  self.local_constraints[i])
+            L = J_r_p - self.dual_variable[i] * (J_c_p)
             L = L.mean()
 
             agent.policy_grad.zero_grad()

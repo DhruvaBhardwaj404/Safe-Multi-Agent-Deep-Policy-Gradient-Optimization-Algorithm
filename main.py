@@ -37,7 +37,7 @@ def run_CMADDPG_with_Q_cost():
     device = "cpu"#("cuda" if torch.cuda.is_available() else "cpu")
 
     #c = np.array([0.3, 0.3, 0.3])
-    c = np.array([0.5,0.5])
+    c = np.array([1.5,1.5])
     env = simple_spread_v3.parallel_env(N=num_agents,render_mode="ansi", max_cycles=EPISODE_LENGTH)
     writer = SummaryWriter()
     control = CMADDPG(obs_shape, 5, num_agents, DISCOUNT_FACTOR,0.01, device, c,batch_size=1024)

@@ -79,7 +79,7 @@ def run_CMADDPG_with_Q_cost():
         if episode % LOG_EVERY ==0:
             writer.add_scalar("Global Reward", eps_reward, epoch)
             writer.add_scalar("Mean Distance From closest Landmark",eps_distance,epoch)
-            writer.add_scalar("Average Cost", eps_cost, epoch)
+            writer.add_scalar("Total Cost Incurred during the episode", eps_cost, epoch)
 
         if episode % FLUSH_EVERY == 0:
             # control.save_results()
@@ -257,7 +257,7 @@ def run_MADDPG():
             gc.collect()
             # memory_tracker.print_diff()
         if episode % LOG_EVERY == 0:
-            writer.add_scalar("Global Reward ", eps_reward, epoch)
+            writer.add_scalar("Global Reward", eps_reward, epoch)
             writer.add_scalar("Mean Distance From closest Landmark", mean_distance, epoch)
             writer.add_scalar("Total Cost Incurred during the episode", eps_cost, epoch)
 

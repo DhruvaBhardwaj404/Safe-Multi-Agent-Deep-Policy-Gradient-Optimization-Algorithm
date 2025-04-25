@@ -23,8 +23,11 @@ TRAIN_EVERY = 100
 MAX_EPISODES = 200000
 EPISODE_LENGTH =25
 
-VISUALIZE_EVERY = 1000
+VISUALIZE_EVERY = 10000
 DISCOUNT_FACTOR = 0.95
+
+BATCH_SIZE = 1024
+TAU = 0.1
 
 
 num_agents = 2
@@ -40,7 +43,7 @@ def run_CMADDPG_with_Q_cost():
     c = np.array([0.1,0.1])
     env = simple_spread_v3.parallel_env(N=num_agents,render_mode="ansi", max_cycles=EPISODE_LENGTH)
     writer = SummaryWriter()
-    control = CMADDPG(obs_shape, 5, num_agents, DISCOUNT_FACTOR,0.1, device, c,batch_size=1024)
+    control = CMADDPG(obs_shape, 5, num_agents, DISCOUNT_FACTOR,TAU, device, c,batch_size=BATCH_SIZE)
     epoch = 0
     for episode in tqdm(range(MAX_EPISODES+1)):
 
@@ -115,7 +118,7 @@ def run_CMADDPG():
     env = simple_spread_v3.parallel_env(N=num_agents, render_mode="ansi", max_cycles=EPISODE_LENGTH)
     writer = SummaryWriter()
 
-    control = CMADDPG_NQ(obs_shape, 5, num_agents, DISCOUNT_FACTOR, 0.1, device, c, batch_size=1024)
+    control = CMADDPG_NQ(obs_shape, 5, num_agents, DISCOUNT_FACTOR, TAU, device, c, batch_size=BATCH_SIZE)
     epoch = 0
 
     discount_factors = [pow(DISCOUNT_FACTOR, i) for i in range(1, 25)]
@@ -216,7 +219,7 @@ def run_MADDPG():
     writer = SummaryWriter()
 
 
-    control = MADDPG(obs_shape, 5, num_agents, DISCOUNT_FACTOR, 0.1, device,batch_size=32)
+    control = MADDPG(obs_shape, 5, num_agents, DISCOUNT_FACTOR, TAU, device,batch_size=BATCH_SIZE)
     t1 = int(time.time())
     epoch = 0
     for episode in tqdm(range(MAX_EPISODES+1)):

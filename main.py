@@ -23,7 +23,7 @@ TRAIN_EVERY = 100
 MAX_EPISODES = 200000
 EPISODE_LENGTH =25
 
-VISUALIZE_EVERY = 10000
+VISUALIZE_EVERY = 1000
 DISCOUNT_FACTOR = 0.95
 
 
@@ -40,7 +40,7 @@ def run_CMADDPG_with_Q_cost():
     c = np.array([0.1,0.1])
     env = simple_spread_v3.parallel_env(N=num_agents,render_mode="ansi", max_cycles=EPISODE_LENGTH)
     writer = SummaryWriter()
-    control = CMADDPG(obs_shape, 5, num_agents, DISCOUNT_FACTOR,0.01, device, c,batch_size=1024)
+    control = CMADDPG(obs_shape, 5, num_agents, DISCOUNT_FACTOR,0.1, device, c,batch_size=1024)
     epoch = 0
     for episode in tqdm(range(MAX_EPISODES+1)):
 
@@ -77,7 +77,7 @@ def run_CMADDPG_with_Q_cost():
             gc.collect()
 
         if episode % LOG_EVERY ==0:
-            writer.add_scalar("Global Reward", eps_reward, epoch)
+            writer.add_scalar("Accumulated Global Reward", eps_reward, epoch)
             writer.add_scalar("Mean Distance From closest Landmark",eps_distance,epoch)
             writer.add_scalar("Total Cost Incurred during the episode", eps_cost, epoch)
 
@@ -86,7 +86,7 @@ def run_CMADDPG_with_Q_cost():
             writer.flush()
 
         if episode % VISUALIZE_EVERY == 0:
-            l_env = simple_spread_v3.parallel_env(N=num_agents,render_mode="rgb_array", max_cycles=EPISODE_LENGTH)
+            l_env = simple_spread_v3.parallel_env(N=num_agents,render_mode="rgb_array", max_cycles=EPISODE_LENGTH, dynamic_rescaling=True)
             for st in range(1,6):
                 observations, infos = l_env.reset(episode+st)
                 frames = []
@@ -115,7 +115,7 @@ def run_CMADDPG():
     env = simple_spread_v3.parallel_env(N=num_agents, render_mode="ansi", max_cycles=EPISODE_LENGTH)
     writer = SummaryWriter()
 
-    control = CMADDPG_NQ(obs_shape, 5, num_agents, DISCOUNT_FACTOR, 0.01, device, c, batch_size=1024)
+    control = CMADDPG_NQ(obs_shape, 5, num_agents, DISCOUNT_FACTOR, 0.1, device, c, batch_size=1024)
     epoch = 0
 
     discount_factors = [pow(DISCOUNT_FACTOR, i) for i in range(1, 25)]
@@ -177,7 +177,7 @@ def run_CMADDPG():
             gc.collect()
 
         if episode % LOG_EVERY == 0:
-            writer.add_scalar("Global Reward", eps_reward, epoch)
+            writer.add_scalar("Accumulated Global Reward", eps_reward, epoch)
             writer.add_scalar("Mean Distance From closest Landmark", eps_distance,epoch)
             writer.add_scalar("Total Cost Incurred during the episode", eps_cost, epoch)
 
@@ -186,7 +186,7 @@ def run_CMADDPG():
             writer.flush()
 
         if episode % VISUALIZE_EVERY == 0:
-            l_env = simple_spread_v3.parallel_env(N=num_agents, render_mode="rgb_array", max_cycles=EPISODE_LENGTH)
+            l_env = simple_spread_v3.parallel_env(N=num_agents, render_mode="rgb_array", max_cycles=EPISODE_LENGTH, dynamic_rescaling=True)
             for st in range(1, 6):
                 observations, infos = l_env.reset(episode + st)
                 frames = []
@@ -216,7 +216,7 @@ def run_MADDPG():
     writer = SummaryWriter()
 
 
-    control = MADDPG(obs_shape, 5, num_agents, DISCOUNT_FACTOR, 0.01, device,batch_size=32)
+    control = MADDPG(obs_shape, 5, num_agents, DISCOUNT_FACTOR, 0.1, device,batch_size=32)
     t1 = int(time.time())
     epoch = 0
     for episode in tqdm(range(MAX_EPISODES+1)):
@@ -257,7 +257,7 @@ def run_MADDPG():
             gc.collect()
             # memory_tracker.print_diff()
         if episode % LOG_EVERY == 0:
-            writer.add_scalar("Global Reward", eps_reward, epoch)
+            writer.add_scalar("Accumulated Global Reward", eps_reward, epoch)
             writer.add_scalar("Mean Distance From closest Landmark", mean_distance, epoch)
             writer.add_scalar("Total Cost Incurred during the episode", eps_cost, epoch)
 
@@ -266,7 +266,7 @@ def run_MADDPG():
         #     control.save_results()
 
         if episode % VISUALIZE_EVERY == 0:
-            l_env = simple_spread_v3.parallel_env(N=num_agents,render_mode="rgb_array", max_cycles=EPISODE_LENGTH)
+            l_env = simple_spread_v3.parallel_env(N=num_agents,render_mode="rgb_array", max_cycles=EPISODE_LENGTH, dynamic_rescaling=True)
             for st in range(1,6):
                 observations, infos = l_env.reset(episode+st+234)
                 frames = []

@@ -190,7 +190,7 @@ class MADDPG:
             q_value = agent.get_reward(q_input_p)
             exp_ret = (log_pol * q_value)
             exp_ret = -exp_ret.sum()
-
+            print(exp_ret)
             agent.policy_grad.zero_grad()
 
             exp_ret.backward(retain_graph=True)

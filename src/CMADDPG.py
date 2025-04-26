@@ -222,6 +222,8 @@ class CMADDPG:
             agent.policy_grad.step()
             with torch.no_grad():
                 self.dual_variable[i] = self.dual_variable[i] + 0.0001*torch.sum(cost-self.local_constraints[i])
+                self.dual_variable[i] = torch.max(self.dual_variable[i], torch.tensor(0.0))
+
             # self.dual_optim.step()
 
             del q_input_p,cost

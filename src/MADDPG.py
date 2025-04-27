@@ -47,7 +47,7 @@ class MADDPG:
         # self.eps_decay = torch.tensor(eps_decay).to(device)
         self.tau = torch.tensor(tau).to(device)
         self.batch_size = batch_size
-        self.replay = ReplayBuffer(storage=ListStorage(max_size=1024*25),batch_size=self.batch_size)
+        self.replay = ReplayBuffer(storage=ListStorage(max_size=1024*5),batch_size=self.batch_size)
         self.q_optim = []
         self.p_optim = []
         # self.threshold = threshold
@@ -68,7 +68,7 @@ class MADDPG:
 
 
     def add_to_replay(self,obs_old:torch.tensor, action:torch.tensor, reward:torch.tensor,
-                      obs_new:torch.tensor):
+                      obs_new:torch.tensor,cost):
         """
 
         @param obs_old:
@@ -86,10 +86,11 @@ class MADDPG:
         obs_old = convert_dict_to_tensors(obs_old).to(self.device)
         obs_new = convert_dict_to_tensors(obs_new).to(self.device)
         act = torch.stack(action).to(self.device)
+        cost = convert_dict_to_tensors(cost).to(self.device)
 
         if reward.size()[0]==0:
             return
-        self.replay.add(({"obs":obs_old, "act":act, "rew":reward, "nobs":obs_new}))
+        self.replay.add(({"obs":obs_old, "act":act, "rew":reward, "nobs":obs_new,"cost":cost}))
 
 
     def get_action(self,obs):
@@ -116,7 +117,7 @@ class MADDPG:
         @rtype:
         """
         if len(self.replay) < self.batch_size:
-            return None
+            return None,None
 
         # if not len(self.replay) % self.threshold == 0:
         #     return None
@@ -134,6 +135,7 @@ class MADDPG:
         obs_batch = samples["obs"].to(self.device).transpose(0, 1).clone().detach()
         nobs_batch = samples["nobs"].to(self.device).transpose(0, 1).clone().detach()
         act_batch = samples["act"].to(self.device).transpose(0, 1).clone()
+        cost_batch = samples["cost"].to(self.device).transpose(0, 1).clone().detach()
 
         nact_batch = torch.stack([
             self.agents[i].get_action_target(nobs_batch[i])
@@ -155,6 +157,7 @@ class MADDPG:
         q_input_pol = torch.cat([gobs_batch, gcur_act_batch], dim=1)
 
         mean_q_loss_reward = 0
+        mean_J_C = 0
 
         for i, agent in enumerate(self.agents):
 
@@ -190,7 +193,7 @@ class MADDPG:
             q_value = agent.get_reward(q_input_p)
             exp_ret = (log_pol * q_value)
             exp_ret = -exp_ret.sum()
-            print(exp_ret)
+            # print(exp_ret)
             agent.policy_grad.zero_grad()
 
             exp_ret.backward(retain_graph=True)
@@ -207,8 +210,11 @@ class MADDPG:
 
             agent.save_checkpoint(None,None)
 
+            cost = torch.tensor(cost_batch[i].clone().detach()).reshape((self.batch_size, 1))
+            mean_J_C += cost_batch[i].mean()
+
         del q_input_pol
-        return mean_q_loss_reward/num_agents
+        return mean_q_loss_reward/num_agents,mean_J_C/num_agents
 
 
     # def save_results(self):

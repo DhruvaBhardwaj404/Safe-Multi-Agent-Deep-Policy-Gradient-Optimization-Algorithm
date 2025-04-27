@@ -49,7 +49,7 @@ class CMADDPG:
         # self.eps = torch.tensor(eps).to(device)
         self.tau = torch.tensor(tau).to(device)
         self.batch_size = batch_size
-        self.replay = ReplayBuffer(storage=ListStorage(max_size=1024*25),batch_size=self.batch_size)
+        self.replay = ReplayBuffer(storage=ListStorage(max_size=1024*5),batch_size=self.batch_size)
         self.q_optim = []
         self.p_optim = []
         # self.threshold = threshold

@@ -298,7 +298,7 @@ def run_MADDPG():
 
             env_reward = deepcopy(rewards)
             for k in rewards:
-                rewards[k] = rewards[k] - cost[k]
+                rewards[k] = rewards[k] #- cost[k]
 
             distance = convert_dict_to_tensors(env_reward)
             mean_cost = convert_dict_to_tensors(cost).mean()

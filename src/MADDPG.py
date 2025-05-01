@@ -187,13 +187,12 @@ class MADDPG:
             cur_pol = (cur_policy * pol_weight).sum(dim=1).clone()
             cur_pol = cur_pol.view((self.batch_size, 1))
             log_pol = cur_pol #using LogSoftMax in the network
-            # print("pol",torch.isinf(log_pol).any())
-            # torch.where(torch.isinf(log_pol), torch.tensor(0.0), log_pol)
-            # print(torch.isinf(log_pol).any())
+
             q_value = agent.get_reward(q_input_p)
             exp_ret = (log_pol * q_value)
-            exp_ret = -exp_ret.sum()
-            # print(exp_ret)
+
+            exp_ret = -exp_ret.mean()
+
             agent.policy_grad.zero_grad()
 
             exp_ret.backward(retain_graph=True)

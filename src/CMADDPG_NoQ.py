@@ -199,7 +199,7 @@ class CMADDPG_NQ:
 
 
             L = J_r_p - self.dual_variable[i] * (J_c_p - self.local_constraints[i])
-            L = -L.sum()
+            L = -L.mean()
 
             agent.policy_grad.zero_grad()
             # self.dual_optim.zero_grad()

@@ -56,6 +56,8 @@ class CMADDPG_NQ:
         self.device = device
         self.steps = 0
         self.agents = []
+        self.eps = 0
+        self.step = 2 / 1e6
         self.dual_variable = [torch.tensor(0.0, requires_grad=False) for _ in local_constraints]
         # self.dual_optim = torch.optim.SGD(self.dual_variable,lr=0.1)
 
@@ -66,7 +68,7 @@ class CMADDPG_NQ:
         #     self.training_logs = pd.DataFrame()
 
         for i in range(0,agent_num):
-            self.agents.append(Agent(i,action_size,obs_size,agent_num,device))
+            self.agents.append(Agent(i,action_size,obs_size,agent_num,device,lr=1e-4))
             self.agents[i].load_checkpoint()
 
 
@@ -90,14 +92,15 @@ class CMADDPG_NQ:
         cost = convert_dict_to_tensors(cost).to(self.device)
         obs_old = convert_dict_to_tensors(obs_old).to(self.device)
         obs_new = convert_dict_to_tensors(obs_new).to(self.device)
-        act = torch.stack(action) #convert_dict_to_tensors(a)
-        # for a in action:
-        #     act.append(a)
-        # print(act)
-        # act = torch.tensor([act])
+        one_hot_action = []
+        for a in action:
+            one_hot_action.append(torch.nn.functional.gumbel_softmax(a, hard=True))
+
+        act = torch.stack(one_hot_action).to(self.device)
+
         self.replay.add({"obs":obs_old, "act":act, "rew":reward, "nobs":obs_new, "cost":cost})
 
-    def get_action(self,obs):
+    def get_action(self, obs):
         """
 
         @param obs:
@@ -108,11 +111,19 @@ class CMADDPG_NQ:
         obs = convert_dict_to_tensors(obs).to(self.device)
         agent_actions = []
 
-        for ind,a in enumerate(self.agents):
-            agent_actions.append(a.get_next_action(obs[ind]).to("cpu"))
+        for ind, a in enumerate(self.agents):
+            rand = np.random.random()
+            if rand < self.eps:
+                rand_action = np.random.randint(0, self.action_size)
+                agent_actions.append(np.zeros(self.action_size))
+                agent_actions[ind][rand_action] = 1
+                agent_actions[ind] = torch.tensor(agent_actions[ind])
+            else:
+                agent_actions.append(a.get_next_action(obs[ind]).to("cpu"))
 
+        self.eps -= self.step
+        agent_actions = torch.stack(agent_actions).to(dtype=torch.float32)
         return agent_actions
-
 
     def update(self):
         """
@@ -141,6 +152,12 @@ class CMADDPG_NQ:
             for i in range(num_agents)
             ])
 
+        nact_weight = torch.nn.functional.gumbel_softmax(nact_batch, hard=True)
+        cur_act_weight = torch.nn.functional.gumbel_softmax(cur_act_batch, hard=True)
+
+        cur_act_batch = cur_act_weight
+        nact_batch = nact_weight
+
         with torch.no_grad():
             gobs_batch = obs_batch.permute(1, 0, 2).reshape(self.batch_size, self.obs_size*num_agents)
             gnobs_batch = nobs_batch.permute(1, 0, 2).reshape(self.batch_size, self.obs_size*num_agents)
@@ -163,7 +180,7 @@ class CMADDPG_NQ:
             q_input_t_r = q_target_input.clone().detach()
             rew = rew_batch[i].view((self.batch_size,1)).clone().detach()
             q_r_t = agent.q_function_target(q_input_t_r)
-            y_target_r = rew + self.gamma * q_r_t
+            y_target_r = -rew + self.gamma * q_r_t
 
             q_pred_r = agent.get_reward(q_input_r)
 
@@ -180,34 +197,32 @@ class CMADDPG_NQ:
 
             cur_policy = agent.get_next_action(obs_batch[i])
 
-            pol_weight = torch.nn.functional.gumbel_softmax(cur_policy, hard=True)
+            pol_weight = torch.nn.functional.gumbel_softmax(cur_policy,hard=True)
 
             cur_pol = (cur_policy * pol_weight).sum(dim=1).clone()
             cur_pol = cur_pol.view((self.batch_size,1))
-            log_pol = cur_pol #using logsoftmax in the network
+            # log_pol = cur_pol #using logsoftmax in the network
 
             q_value = agent.get_reward(q_input_p)
-            J_r_p =  (log_pol * q_value)
-
+            J_r_p = (cur_pol * q_value).mean(dim=1)
+            J_r_p = J_r_p.sum()
             cost = torch.tensor(cost_batch[i].clone().detach()).reshape((self.batch_size,1))
 
             # cost = cost - self.local_constraints[i]
             # cost = torch.tensor(cost).reshape((self.batch_size,1))
             #
-            J_c_p = log_pol * (cost)
+            J_c_p = (cur_policy * cost).mean(dim=1)
             mean_J_C += cost_batch[i].mean()
 
-
-            L = J_r_p - self.dual_variable[i] * (J_c_p - self.local_constraints[i])
-            L = -L.mean()
+            L = J_r_p + self.dual_variable[i] * (J_c_p - self.local_constraints[i])
+            L = -L.sum()
 
             agent.policy_grad.zero_grad()
-            # self.dual_optim.zero_grad()
 
             L.backward(retain_graph=True)
             agent.policy_grad.step()
             with torch.no_grad():
-                self.dual_variable[i] = self.dual_variable[i] + 0.0001*torch.sum(cost - self.local_constraints[i])
+                self.dual_variable[i] = self.dual_variable[i] + 0.00001*torch.sum(cost - self.local_constraints[i])
                 self.dual_variable[i] = torch.max(self.dual_variable[i],torch.tensor(0.0))
             # self.dual_optim.step()
 

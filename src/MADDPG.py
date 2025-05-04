@@ -1,3 +1,5 @@
+import random
+import numpy as np
 import pandas as pd
 import torch
 from agilerl.components.replay_buffer import ReplayBuffer
@@ -54,6 +56,8 @@ class MADDPG:
         self.device = device
         self.steps = 0
         self.agents = []
+        self.eps =1
+        self.step = 1/1e4
         # try:
         #     self.training_logs = pd.read_csv("./training_record_MADDPG.csv")
         #     self.performance_logs = pd.read_csv("./performance_record_MADDPG.csv")
@@ -62,7 +66,7 @@ class MADDPG:
         #     self.performance_logs = pd.DataFrame()
 
         for i in range(0,agent_num):
-            self.agents.append(Agent(i,action_size,obs_size,agent_num,device))
+            self.agents.append(Agent(i,action_size,obs_size,agent_num,device, lr=1e-4))
             self.agents[i].load_checkpoint()
 
 
@@ -85,7 +89,11 @@ class MADDPG:
         reward = convert_dict_to_tensors(reward).to(self.device)
         obs_old = convert_dict_to_tensors(obs_old).to(self.device)
         obs_new = convert_dict_to_tensors(obs_new).to(self.device)
-        act = torch.stack(action).to(self.device)
+        one_hot_action = []
+        for a in action:
+            one_hot_action.append(torch.nn.functional.gumbel_softmax(a, hard=True))
+
+        act = torch.stack(one_hot_action).to(self.device)
         cost = convert_dict_to_tensors(cost).to(self.device)
 
         if reward.size()[0]==0:
@@ -104,9 +112,18 @@ class MADDPG:
         obs = convert_dict_to_tensors(obs).to(self.device)
         agent_actions = []
 
-        for ind,a in enumerate(self.agents):
-            agent_actions.append(a.get_next_action(obs[ind]).to("cpu"))
+        for ind, a in enumerate(self.agents):
+            rand = np.random.random()
+            if rand<self.eps:
+                rand_action = np.random.randint(1,self.action_size)
+                agent_actions.append(np.zeros(self.action_size))
+                agent_actions[ind][rand_action] = 1
+                agent_actions[ind] = torch.tensor(agent_actions[ind])
+            else:
+                agent_actions.append(a.get_next_action(obs[ind]).to("cpu"))
 
+        self.eps -= self.step
+        agent_actions = torch.stack(agent_actions).to(dtype=torch.float32)
         return agent_actions
 
 
@@ -137,6 +154,8 @@ class MADDPG:
         act_batch = samples["act"].to(self.device).transpose(0, 1).clone()
         cost_batch = samples["cost"].to(self.device).transpose(0, 1).clone().detach()
 
+
+
         nact_batch = torch.stack([
             self.agents[i].get_action_target(nobs_batch[i])
             for i in range(num_agents)
@@ -145,6 +164,12 @@ class MADDPG:
             self.agents[i].get_next_action(obs_batch[i])
             for i in range(num_agents)
         ])
+
+        nact_weight = torch.nn.functional.gumbel_softmax(nact_batch, hard=True)
+        cur_act_weight = torch.nn.functional.gumbel_softmax(cur_act_batch, hard=True)
+
+        cur_act_batch = cur_act_weight
+        nact_batch = nact_weight
 
         gobs_batch = obs_batch.permute(1, 0, 2).reshape(self.batch_size, self.obs_size * num_agents)
         gact_batch = act_batch.permute(1, 0, 2).reshape(self.batch_size, self.action_size * num_agents)
@@ -158,14 +183,14 @@ class MADDPG:
 
         mean_q_loss_reward = 0
         mean_J_C = 0
-
+        # print(len(self.agents))
         for i, agent in enumerate(self.agents):
-
+            # print(i)
             q_input_r = q_input.clone().detach()
             q_input_t_r = q_target_input.clone().detach()
             rew = rew_batch[i].view((self.batch_size, 1)).clone().detach()
             q_r_t = agent.q_function_target(q_input_t_r)
-            y_target_r = rew + self.gamma * q_r_t
+            y_target_r = -rew + self.gamma * q_r_t
 
             q_pred_r = agent.get_reward(q_input_r)
 
@@ -181,18 +206,18 @@ class MADDPG:
             q_input_p = q_input_pol.clone().detach()
 
             cur_policy = agent.get_next_action(obs_batch[i])
-
-            pol_weight = torch.nn.functional.gumbel_softmax(cur_policy, hard=True)
+            # weight = torch.nn.functional.gumbel_softmax(cur_policy)
+            # cur_policy = weight*cur_policy
+            pol_weight = torch.nn.functional.gumbel_softmax(cur_policy,hard=True)
 
             cur_pol = (cur_policy * pol_weight).sum(dim=1).clone()
-            cur_pol = cur_pol.view((self.batch_size, 1))
-            log_pol = cur_pol #using LogSoftMax in the network
+            #cur_pol = cur_pol.view((self.batch_size, 1))
+            #log_pol = cur_pol #using LogSoftMax in the network
 
             q_value = agent.get_reward(q_input_p)
-            exp_ret = (log_pol * q_value)
-
+            exp_ret = (cur_pol * q_value).sum(dim=1)
             exp_ret = -exp_ret.mean()
-
+            # print(f"agent {i} {exp_ret}")
             agent.policy_grad.zero_grad()
 
             exp_ret.backward(retain_graph=True)

@@ -23,7 +23,7 @@ TRAIN_EVERY = 100
 MAX_EPISODES = 200000
 EPISODE_LENGTH =25
 
-VISUALIZE_EVERY = 10000
+VISUALIZE_EVERY = 1000
 DISCOUNT_FACTOR = 0.95
 
 BATCH_SIZE = 1024
@@ -35,8 +35,7 @@ obs_shape = num_agents*6
 
 
 def run_CMADDPG_with_Q_cost():
-    torch.manual_seed(200)
-    np.random.seed(200)
+
     device = "cpu"#("cuda" if torch.cuda.is_available() else "cpu")
 
     #c = np.array([0.3, 0.3, 0.3])
@@ -146,8 +145,7 @@ def run_CMADDPG_with_Q_cost():
     env.close()
 
 def run_CMADDPG():
-    torch.manual_seed(200)
-    np.random.seed(200)
+
     device = "cpu"  # ("cuda" if torch.cuda.is_available() else "cpu")
 
     # c = np.array([0.3, 0.3, 0.3])
@@ -258,8 +256,6 @@ def run_CMADDPG():
 
 
 def run_MADDPG():
-    torch.manual_seed(200)
-    np.random.seed(200)
     device = "cpu"#("cuda" if torch.cuda.is_available() else "cpu")
 
     env = simple_spread_v3.parallel_env(N=num_agents,render_mode="ansi", max_cycles=EPISODE_LENGTH)
@@ -375,7 +371,8 @@ if __name__ == "__main__":
     algo = sys.argv[1]
 
     memory_tracker = tracker.SummaryTracker()
-
+    torch.manual_seed(2243)
+    np.random.seed(2230)
     if algo == "M":
         run_MADDPG()
     elif algo == "C":

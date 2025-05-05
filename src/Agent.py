@@ -35,12 +35,12 @@ class Agent:
         self.q_function.apply(init_weights)
 
         self.q_function_target = deepcopy(self.q_function)
-        self.q_grad = torch.optim.Adam(self.q_function.model.parameters(),lr*10,weight_decay=0.5)
+        self.q_grad = torch.optim.Adam(self.q_function.model.parameters(),0.001,weight_decay=0.5)
 
         self.policy = DPN(obs_size,action_size,device)
         self.policy.apply(init_weights)
         self.policy_target = deepcopy(self.policy)
-        self.policy_grad = torch.optim.Adam(self.policy.model.parameters(),lr,weight_decay=0.5)
+        self.policy_grad = torch.optim.Adam(self.policy.model.parameters(),0.00001,weight_decay=0.5)
 
 
         self.loss_q = None
@@ -157,18 +157,18 @@ class ConstrainedAgent:
         self.q_function_r.apply(init_weights)
 
         self.q_function_target_r = deepcopy(self.q_function_r)
-        self.q_grad_r = torch.optim.Adam(self.q_function_r.model.parameters(),lr*10)
+        self.q_grad_r = torch.optim.Adam(self.q_function_r.model.parameters(),0.001)
 
         self.q_function_c = DQN((action_size + obs_size) * num_agents, device)
 
         self.q_function_c.apply(init_weights)
         self.q_function_target_c = deepcopy(self.q_function_c)
-        self.q_grad_c = torch.optim.Adam(self.q_function_c.model.parameters(), lr*10)
+        self.q_grad_c = torch.optim.Adam(self.q_function_c.model.parameters(), 0.001)
 
         self.policy = DPN(obs_size,action_size,device)
         self.policy.apply(init_weights)
         self.policy_target = deepcopy(self.policy)
-        self.policy_grad = torch.optim.Adam(self.policy.model.parameters(),lr=lr)
+        self.policy_grad = torch.optim.Adam(self.policy.model.parameters(),lr=0.00005)
 
 
 

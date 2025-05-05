@@ -6,9 +6,9 @@ import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 
 from pettingzoo.mpe import simple_spread_v3
-from src.MADDPG import MADDPG
-from src.CMADDPG import CMADDPG
-from src.CMADDPG_NoQ import CMADDPG_NQ
+from src.MADPG import MADPG
+from src.CMADPG import CMADPG
+from src.CMADPG_NoQ import CMADPG_NQ
 from src.helpers import *
 import torch
 from tqdm import tqdm
@@ -16,8 +16,8 @@ import imageio
 from pympler import tracker
 import gc
 
-LOG_EVERY = 1000
-FLUSH_EVERY = 10000
+LOG_EVERY = 1
+FLUSH_EVERY = 1000
 TRAIN_EVERY = 100
 
 MAX_EPISODES = 200000
@@ -34,15 +34,15 @@ num_agents = 2
 obs_shape = num_agents*6
 
 
-def run_CMADDPG_with_Q_cost():
+def run_CMADPG_with_Q_cost():
 
     device = "cpu"#("cuda" if torch.cuda.is_available() else "cpu")
 
     #c = np.array([0.3, 0.3, 0.3])
     c = np.array([0.01,0.01])
     env = simple_spread_v3.parallel_env(N=num_agents,render_mode="ansi", max_cycles=EPISODE_LENGTH)
-    writer = SummaryWriter(f"CMADDPG_Q_C_threshold_{str(c[0])}")
-    control = CMADDPG(obs_shape, 5, num_agents, DISCOUNT_FACTOR,TAU, device, c,batch_size=BATCH_SIZE)
+    writer = SummaryWriter(f"./runs/CMADPG_Q_C_threshold_{str(c[0])}")
+    control = CMADPG(obs_shape, 5, num_agents, DISCOUNT_FACTOR,TAU, device, c,batch_size=BATCH_SIZE)
     epoch = 0
     discount_factors = [pow(DISCOUNT_FACTOR, i) for i in range(1, 25)]
 
@@ -125,7 +125,7 @@ def run_CMADDPG_with_Q_cost():
             writer.flush()
 
         if episode % VISUALIZE_EVERY == 0:
-            l_env = simple_spread_v3.parallel_env(N=num_agents,render_mode="rgb_array", max_cycles=EPISODE_LENGTH, dynamic_rescaling=True)
+            l_env = simple_spread_v3.parallel_env(N=num_agents,render_mode="rgb_array", max_cycles=EPISODE_LENGTH, dynamic_rescaling=False)
             for st in range(1,6):
                 observations, infos = l_env.reset(episode+st)
                 frames = []
@@ -139,21 +139,21 @@ def run_CMADDPG_with_Q_cost():
                     frame = np.array(frame)
                     frames.append(frame)
 
-                imageio.mimsave(f'./Training_Visualizations/CMADDPG_Q_c_threshold_{str(c[0])}_{st}_{episode}.gif', frames, fps=5,quantizer="mediancut")
+                imageio.mimsave(f'./Training_Visualizations/CMADPG_Q_c_threshold_{str(c[0])}_{st}_{episode}.gif', frames, fps=5,quantizer="mediancut")
             l_env.close()
 
     env.close()
 
-def run_CMADDPG():
+def run_CMADPG():
 
     device = "cpu"  # ("cuda" if torch.cuda.is_available() else "cpu")
 
     # c = np.array([0.3, 0.3, 0.3])
-    c = np.array([0.01,0.01])
+    c = np.array([1.2,1.2])
     env = simple_spread_v3.parallel_env(N=num_agents, render_mode="ansi", max_cycles=EPISODE_LENGTH)
-    writer = SummaryWriter(f"CMADDPG_threshold_{str(c[0])}")
+    writer = SummaryWriter(f"./runs/CMADPG_threshold_{str(c[0])}")
 
-    control = CMADDPG_NQ(obs_shape, 5, num_agents, DISCOUNT_FACTOR, TAU, device, c, batch_size=BATCH_SIZE)
+    control = CMADPG_NQ(obs_shape, 5, num_agents, DISCOUNT_FACTOR, TAU, device, c, batch_size=BATCH_SIZE)
     epoch = 0
 
     discount_factors = [pow(DISCOUNT_FACTOR, i) for i in range(1, 25)]
@@ -234,7 +234,7 @@ def run_CMADDPG():
             writer.flush()
 
         if episode % VISUALIZE_EVERY == 0:
-            l_env = simple_spread_v3.parallel_env(N=num_agents, render_mode="rgb_array", max_cycles=EPISODE_LENGTH, dynamic_rescaling=True)
+            l_env = simple_spread_v3.parallel_env(N=num_agents, render_mode="rgb_array", max_cycles=EPISODE_LENGTH, dynamic_rescaling=False)
             for st in range(1, 6):
                 observations, infos = l_env.reset(episode + st)
                 frames = []
@@ -248,22 +248,22 @@ def run_CMADDPG():
                     frame = np.array(frame)
                     frames.append(frame)
 
-                imageio.mimsave(f'./Training_Visualizations/CMADDPG_threshold_{str(c[0])}_{st}_{episode}.gif', frames, fps=5,
+                imageio.mimsave(f'./Training_Visualizations/CMADPG_threshold_{str(c[0])}_{st}_{episode}.gif', frames, fps=5,
                                 quantizer="mediancut")
             l_env.close()
 
     env.close()
 
 
-def run_MADDPG():
+def run_MADPG():
     device = "cpu"#("cuda" if torch.cuda.is_available() else "cpu")
 
     env = simple_spread_v3.parallel_env(N=num_agents,render_mode="ansi", max_cycles=EPISODE_LENGTH)
-    writer = SummaryWriter("MADDPG_modified_reward")
+    writer = SummaryWriter("./runs/MADPG_modified_reward")
 
     discount_factors = [pow(DISCOUNT_FACTOR, i) for i in range(1, 25)]
 
-    control = MADDPG(obs_shape, 5, num_agents, DISCOUNT_FACTOR, TAU, device,batch_size=BATCH_SIZE)
+    control = MADPG(obs_shape, 5, num_agents, DISCOUNT_FACTOR, TAU, device,batch_size=BATCH_SIZE)
     t1 = int(time.time())
     epoch = 0
     for episode in tqdm(range(MAX_EPISODES+1)):
@@ -346,7 +346,7 @@ def run_MADDPG():
         #     control.save_results()
 
         if episode % VISUALIZE_EVERY == 0:
-            l_env = simple_spread_v3.parallel_env(N=num_agents,render_mode="rgb_array", max_cycles=EPISODE_LENGTH, dynamic_rescaling=True)
+            l_env = simple_spread_v3.parallel_env(N=num_agents,render_mode="rgb_array", max_cycles=EPISODE_LENGTH, dynamic_rescaling=False)
             for st in range(1,6):
                 observations, infos = l_env.reset(episode+st+234)
                 frames = []
@@ -360,7 +360,7 @@ def run_MADDPG():
                     frame = np.array(frame)
                     frames.append(frame)
 
-                imageio.mimsave(f'./Training_Visualizations/MADDPG_{st}_{episode}.gif', frames, fps=5,quantizer="mediancut")
+                imageio.mimsave(f'./Training_Visualizations/MADPG_{st}_{episode}.gif', frames, fps=5,quantizer="mediancut")
             l_env.close()
 
     env.close()
@@ -374,8 +374,8 @@ if __name__ == "__main__":
     torch.manual_seed(243)
     np.random.seed(223)
     if algo == "M":
-        run_MADDPG()
+        run_MADPG()
     elif algo == "C":
-        run_CMADDPG_with_Q_cost()
+        run_CMADPG_with_Q_cost()
     elif algo == "CNQ":
-        run_CMADDPG()
+        run_CMADPG()

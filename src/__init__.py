@@ -1,3 +1,3 @@
 from src import DPN
 from src import  DQN
-from src import MADDPG
+from src import MADPG

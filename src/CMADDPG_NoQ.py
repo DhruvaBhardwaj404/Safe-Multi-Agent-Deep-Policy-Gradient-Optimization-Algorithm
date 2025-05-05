@@ -57,7 +57,7 @@ class CMADDPG_NQ:
         self.steps = 0
         self.agents = []
         self.eps = 0
-        self.step = 2 / 1e6
+        self.step = 1 / 1e5
         self.dual_variable = [torch.tensor(0.0, requires_grad=False) for _ in local_constraints]
         # self.dual_optim = torch.optim.SGD(self.dual_variable,lr=0.1)
 
@@ -197,26 +197,27 @@ class CMADDPG_NQ:
 
             cur_policy = agent.get_next_action(obs_batch[i])
 
-            pol_weight = torch.nn.functional.gumbel_softmax(cur_policy,hard=True)
+            # pol_weight = torch.nn.functional.gumbel_softmax(cur_policy,hard=True)
 
-            cur_pol = (cur_policy * pol_weight).sum(dim=1).clone()
-            cur_pol = cur_pol.view((self.batch_size,1))
+            # cur_pol = (cur_policy * pol_weight).sum(dim=1).clone()
+            # cur_pol = cur_pol.view((self.batch_size,1))
             # log_pol = cur_pol #using logsoftmax in the network
 
             q_value = agent.get_reward(q_input_p)
-            J_r_p = (cur_pol * q_value).mean(dim=1)
-            J_r_p = J_r_p.sum()
+            J_r_p = -(cur_policy * q_value).sum(dim=1)
+            J_r_p = J_r_p.mean()
             cost = torch.tensor(cost_batch[i].clone().detach()).reshape((self.batch_size,1))
 
             # cost = cost - self.local_constraints[i]
             # cost = torch.tensor(cost).reshape((self.batch_size,1))
             #
-            J_c_p = (cur_policy * cost).mean(dim=1)
+            J_c_p = (cur_policy * cost).sum(dim=1)
+
             mean_J_C += cost_batch[i].mean()
 
             L = J_r_p + self.dual_variable[i] * (J_c_p - self.local_constraints[i])
-            L = -L.sum()
-
+            L = L.mean()
+            #print(f'{i}',L)
             agent.policy_grad.zero_grad()
 
             L.backward(retain_graph=True)

@@ -57,7 +57,7 @@ class CMADDPG:
         self.steps = 0
         self.agents = []
         self.eps = 0
-        self.step = 1 / 1e6
+        self.step = 1 / 1e5
         self.dual_variable = [torch.tensor(0.0, requires_grad=False) for _ in local_constraints]
         # self.dual_optim = torch.optim.SGD(self.dual_variable,lr=0.1)
 
@@ -220,7 +220,7 @@ class CMADDPG:
             log_pol = cur_pol
 
             q_value = agent.get_reward(q_input_p)
-            J_r_p = (cur_pol * q_value).mean(dim=1)
+            J_r_p = -(cur_pol * q_value).mean(dim=1)
             J_r_p = J_r_p.sum()
 
             q_c_value = agent.get_cost(q_input_p)

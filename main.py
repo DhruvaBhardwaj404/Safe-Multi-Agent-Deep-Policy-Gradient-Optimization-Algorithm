@@ -16,14 +16,14 @@ import imageio
 from pympler import tracker
 import gc
 
-LOG_EVERY = 100
+LOG_EVERY = 1000
 FLUSH_EVERY = 10000
 TRAIN_EVERY = 100
 
 MAX_EPISODES = 200000
 EPISODE_LENGTH =25
 
-VISUALIZE_EVERY = 1000
+VISUALIZE_EVERY = 10000
 DISCOUNT_FACTOR = 0.95
 
 BATCH_SIZE = 1024
@@ -41,7 +41,7 @@ def run_CMADDPG_with_Q_cost():
     #c = np.array([0.3, 0.3, 0.3])
     c = np.array([0.01,0.01])
     env = simple_spread_v3.parallel_env(N=num_agents,render_mode="ansi", max_cycles=EPISODE_LENGTH)
-    writer = SummaryWriter()
+    writer = SummaryWriter(f"CMADDPG_Q_C_threshold_{str(c[0])}")
     control = CMADDPG(obs_shape, 5, num_agents, DISCOUNT_FACTOR,TAU, device, c,batch_size=BATCH_SIZE)
     epoch = 0
     discount_factors = [pow(DISCOUNT_FACTOR, i) for i in range(1, 25)]
@@ -139,7 +139,7 @@ def run_CMADDPG_with_Q_cost():
                     frame = np.array(frame)
                     frames.append(frame)
 
-                imageio.mimsave(f'./Training_Visualizations/CMADDPG_{st}_{episode}.gif', frames, fps=5,quantizer="mediancut")
+                imageio.mimsave(f'./Training_Visualizations/CMADDPG_Q_c_threshold_{str(c[0])}_{st}_{episode}.gif', frames, fps=5,quantizer="mediancut")
             l_env.close()
 
     env.close()
@@ -151,7 +151,7 @@ def run_CMADDPG():
     # c = np.array([0.3, 0.3, 0.3])
     c = np.array([0.01,0.01])
     env = simple_spread_v3.parallel_env(N=num_agents, render_mode="ansi", max_cycles=EPISODE_LENGTH)
-    writer = SummaryWriter()
+    writer = SummaryWriter(f"CMADDPG_threshold_{str(c[0])}")
 
     control = CMADDPG_NQ(obs_shape, 5, num_agents, DISCOUNT_FACTOR, TAU, device, c, batch_size=BATCH_SIZE)
     epoch = 0
@@ -248,7 +248,7 @@ def run_CMADDPG():
                     frame = np.array(frame)
                     frames.append(frame)
 
-                imageio.mimsave(f'./Training_Visualizations/CMADDPG_{st}_{episode}.gif', frames, fps=5,
+                imageio.mimsave(f'./Training_Visualizations/CMADDPG_threshold_{str(c[0])}_{st}_{episode}.gif', frames, fps=5,
                                 quantizer="mediancut")
             l_env.close()
 
@@ -259,7 +259,7 @@ def run_MADDPG():
     device = "cpu"#("cuda" if torch.cuda.is_available() else "cpu")
 
     env = simple_spread_v3.parallel_env(N=num_agents,render_mode="ansi", max_cycles=EPISODE_LENGTH)
-    writer = SummaryWriter()
+    writer = SummaryWriter("MADDPG_modified_reward")
 
     discount_factors = [pow(DISCOUNT_FACTOR, i) for i in range(1, 25)]
 
@@ -291,7 +291,7 @@ def run_MADDPG():
             temp_act.append(act)
             temp_rewards.append(rewards)
             temp_cost.append(cost)
-
+            # print(rewards,cost)
             env_reward = deepcopy(rewards)
             for k in rewards:
                 rewards[k] = rewards[k] - cost[k]
@@ -360,7 +360,7 @@ def run_MADDPG():
                     frame = np.array(frame)
                     frames.append(frame)
 
-                imageio.mimsave(f'./Training_Visualizations/CMADDPG_{st}_{episode}.gif', frames, fps=5,quantizer="mediancut")
+                imageio.mimsave(f'./Training_Visualizations/MADDPG_{st}_{episode}.gif', frames, fps=5,quantizer="mediancut")
             l_env.close()
 
     env.close()
@@ -371,8 +371,8 @@ if __name__ == "__main__":
     algo = sys.argv[1]
 
     memory_tracker = tracker.SummaryTracker()
-    torch.manual_seed(2243)
-    np.random.seed(2230)
+    torch.manual_seed(243)
+    np.random.seed(223)
     if algo == "M":
         run_MADDPG()
     elif algo == "C":

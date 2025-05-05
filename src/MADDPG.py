@@ -56,8 +56,9 @@ class MADDPG:
         self.device = device
         self.steps = 0
         self.agents = []
-        self.eps =1
-        self.step = 1/1e4
+        self.eps = 1
+        self.step = 1/1e5
+        self.temperature = 1
         # try:
         #     self.training_logs = pd.read_csv("./training_record_MADDPG.csv")
         #     self.performance_logs = pd.read_csv("./performance_record_MADDPG.csv")
@@ -66,7 +67,7 @@ class MADDPG:
         #     self.performance_logs = pd.DataFrame()
 
         for i in range(0,agent_num):
-            self.agents.append(Agent(i,action_size,obs_size,agent_num,device, lr=1e-4))
+            self.agents.append(Agent(i,action_size,obs_size,agent_num,device, lr=0.0001))
             self.agents[i].load_checkpoint()
 
 
@@ -113,7 +114,8 @@ class MADDPG:
         agent_actions = []
 
         for ind, a in enumerate(self.agents):
-            rand = np.random.random()
+            rand = numpy.random.random()
+            # print(rand,self.eps)
             if rand<self.eps:
                 rand_action = np.random.randint(1,self.action_size)
                 agent_actions.append(np.zeros(self.action_size))
@@ -124,6 +126,7 @@ class MADDPG:
 
         self.eps -= self.step
         agent_actions = torch.stack(agent_actions).to(dtype=torch.float32)
+        # print(torch.argmax(agent_actions,dim=1))
         return agent_actions
 
 
@@ -199,6 +202,15 @@ class MADDPG:
                 mean_q_loss_reward += loss_q_r
             agent.q_grad.zero_grad()
             loss_q_r.backward(retain_graph=True)
+
+            # for name, param in agent.q_function.named_parameters():
+            #     if param.grad is not None:
+            #         print(f"Layer: {name}, Gradient shape: {param.grad.shape}")
+            #         print(f"Gradients:\n{param.grad}")
+            #     else:
+            #         print(f"Layer: {name}, No gradient calculated yet.")
+            # input()
+
             agent.q_grad.step()
 
             del q_input_r,q_input_t_r,rew
@@ -206,21 +218,31 @@ class MADDPG:
             q_input_p = q_input_pol.clone().detach()
 
             cur_policy = agent.get_next_action(obs_batch[i])
+
             # weight = torch.nn.functional.gumbel_softmax(cur_policy)
             # cur_policy = weight*cur_policy
-            pol_weight = torch.nn.functional.gumbel_softmax(cur_policy,hard=True)
+            # cur_policy = torch.nn.functional.gumbel_softmax(cur_policy,tau =self.temperature, hard=False)
 
-            cur_pol = (cur_policy * pol_weight).sum(dim=1).clone()
+            # cur_pol = (cur_policy * pol_weight).sum(dim=1).clone()
             #cur_pol = cur_pol.view((self.batch_size, 1))
             #log_pol = cur_pol #using LogSoftMax in the network
 
             q_value = agent.get_reward(q_input_p)
-            exp_ret = (cur_pol * q_value).sum(dim=1)
-            exp_ret = -exp_ret.mean()
-            # print(f"agent {i} {exp_ret}")
+            # print(q_value)
+            exp_ret_loss = -(cur_policy * q_value).sum(dim=1)
+            exp_ret_loss = exp_ret_loss.mean()
+            # print(f"agent {i} {exp_ret_loss}")
             agent.policy_grad.zero_grad()
 
-            exp_ret.backward(retain_graph=True)
+            exp_ret_loss.backward(retain_graph=True)
+
+            # for name, param in agent.policy.named_parameters():
+            #     if param.grad is not None:
+            #         print(f"Layer: {name}, Gradient shape: {param.grad.shape}")
+            #         print(f"Gradients:\n{param.grad}")
+            #     else:
+            #         print(f"Layer: {name}, No gradient calculated yet.")
+            # input()
 
             agent.policy_grad.step()
 
@@ -238,6 +260,8 @@ class MADDPG:
             mean_J_C += cost_batch[i].mean()
 
         del q_input_pol
+        # self.temperature -= 100/3e6
+        # print(self.temperature)
         return mean_q_loss_reward/num_agents,mean_J_C/num_agents
 
 

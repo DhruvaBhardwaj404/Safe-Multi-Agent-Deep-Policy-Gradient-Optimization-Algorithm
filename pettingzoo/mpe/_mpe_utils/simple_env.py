@@ -192,7 +192,7 @@ class SimpleEnv(AECEnv):
             global_reward = float(self.scenario.global_reward(self.world))
 
         for agent in self.world.agents:
-            agent_reward = float(self.scenario.reward(agent, self.world))
+            # agent_reward = float(self.scenario.reward(agent, self.world))
             agent_cost = float(self.scenario.cost(agent, self.world)) # changed here
 
             # if self.local_ratio is not None:
@@ -200,9 +200,9 @@ class SimpleEnv(AECEnv):
             #         global_reward
             #     )
             # else:
-            reward = global_reward
+            # reward = global_reward
 
-            self.rewards[agent.name] = agent_reward
+            self.rewards[agent.name] = global_reward
             self.costs[agent.name] = agent_cost
 
     # set env action for a particular agent

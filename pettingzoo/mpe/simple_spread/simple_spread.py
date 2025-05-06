@@ -171,13 +171,13 @@ class Scenario(BaseScenario):
     def dangerously_close(self, agent1, agent2):
         delta_pos = agent1.state.p_pos - agent2.state.p_pos
         dist = np.sqrt(np.sum(np.square(delta_pos)))
-        dist_min = (agent1.size)*1.5
+        dist_min = (agent1.size)*3
         if 0 < dist <dist_min:
-            return 50
+            return 100
         elif 20*dist_min < dist:
             return 0
         else:
-            return 50*(dist_min/dist)
+            return 100*(dist_min/dist)
 
 
     def reward(self, agent, world):

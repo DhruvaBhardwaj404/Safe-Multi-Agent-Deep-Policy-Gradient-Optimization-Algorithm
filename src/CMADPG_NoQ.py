@@ -66,7 +66,7 @@ class CMADPG_NQ:
         #     self.training_logs = pd.DataFrame()
 
         for i in range(0,agent_num):
-            self.agents.append(Agent(i,action_size,obs_size,agent_num,device,lr=1e-4))
+            self.agents.append(Agent(i,action_size,obs_size,agent_num,device,lr=1e-3))
             self.agents[i].load_checkpoint()
 
 
@@ -211,7 +211,7 @@ class CMADPG_NQ:
             L.backward(retain_graph=True)
             agent.policy_grad.step()
             with torch.no_grad():
-                self.dual_variable[i] = self.dual_variable[i] + 0.0001*torch.sum(cost - self.local_constraints[i])
+                self.dual_variable[i] = self.dual_variable[i] + 0.001*torch.sum(cost - self.local_constraints[i])
                 self.dual_variable[i] = torch.max(self.dual_variable[i],torch.tensor(0.0))
             # self.dual_optim.step()
 

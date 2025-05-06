@@ -65,7 +65,7 @@ class MADPG:
         #     self.performance_logs = pd.DataFrame()
 
         for i in range(0,agent_num):
-            self.agents.append(Agent(i,action_size,obs_size,agent_num,device, lr=0.01))
+            self.agents.append(Agent(i,action_size,obs_size,agent_num,device, lr=1e-3))
             self.agents[i].load_checkpoint()
 
 

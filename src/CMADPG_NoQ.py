@@ -193,34 +193,34 @@ class CMADPG_NQ:
             # log_pol = cur_pol #using logsoftmax in the network
 
             q_value = agent.get_reward(q_input_p)
-            J_r_p = -(cur_policy * q_value).sum(dim=1)
+            J_r_p = -(cur_policy * q_value).sum(dim=1).view((self.batch_size,1))
             cost = torch.tensor(cost_batch[i].clone().detach()).reshape((self.batch_size,1))
 
             # cost = cost - self.local_constraints[i]
             # cost = torch.tensor(cost).reshape((self.batch_size,1))
             #
-            J_c_p = (cur_policy * cost).sum(dim=1)
+            J_c_p = (cur_policy * cost).sum(dim=1).view((self.batch_size,1))
 
             mean_J_C += cost_batch[i].mean()
 
             L = J_r_p + self.dual_variable[i] * (J_c_p - self.local_constraints[i])
             L = L.mean()
-            #print(f'{i}',L)
+            print(f'{i}',L)
             agent.policy_grad.zero_grad()
 
             L.backward(retain_graph=True)
             agent.policy_grad.step()
             with torch.no_grad():
-                self.dual_variable[i] = self.dual_variable[i] + 0.001*torch.sum(cost - self.local_constraints[i])
+                self.dual_variable[i] = self.dual_variable[i] + 0.0002*torch.sum(cost - self.local_constraints[i])
                 self.dual_variable[i] = torch.max(self.dual_variable[i],torch.tensor(0.0))
             # self.dual_optim.step()
 
-            for name, param in agent.policy.named_parameters():
-                if param.grad is not None:
-                    print(f"Layer: {name}, Gradient shape: {param.grad.shape}")
-                    print(f"Gradients:\n{param.grad}")
-                else:
-                    print(f"Layer: {name}, No gradient calculated yet.")
+            # for name, param in agent.policy.named_parameters():
+            #     if param.grad is not None:
+            #         print(f"Layer: {name}, Gradient shape: {param.grad.shape}")
+            #         print(f"Gradients:\n{param.grad}")
+            #     else:
+            #         print(f"Layer: {name}, No gradient calculated yet.")
             # input()
 
             del q_input_p,J_c_p

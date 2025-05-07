@@ -220,8 +220,8 @@ class CMADPG:
             log_pol = cur_pol
 
             q_value = agent.get_reward(q_input_p)
-            J_r_p = -(cur_pol * q_value).mean(dim=1)
-            J_r_p = J_r_p.sum()
+            J_r_p = -(cur_pol * q_value).sum(dim=1)
+            J_r_p = J_r_p.view((self.batch_size,1))
 
             q_c_value = agent.get_cost(q_input_p)
             cost = q_c_value.reshape((self.batch_size, 1))
@@ -237,7 +237,7 @@ class CMADPG:
             L.backward(retain_graph=True)
             agent.policy_grad.step()
             with torch.no_grad():
-                self.dual_variable[i] = self.dual_variable[i] + 0.00001*torch.sum(cost-self.local_constraints[i])
+                self.dual_variable[i] = self.dual_variable[i] + 0.0002*torch.sum(cost-self.local_constraints[i])
                 self.dual_variable[i] = torch.max(self.dual_variable[i], torch.tensor(0.0))
 
             # self.dual_optim.step()
